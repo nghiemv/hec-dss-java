@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class DssCatalogReaderTest {
     @Test
-    void CatalogRetrieveAll() {
+    void catalogRetrieveAll() {
         String dssFilePath = TestUtil.getResourceFile("examples-all-data-types.dss").toString();
 
         try (HecDss hecDss = HecDss.open(dssFilePath)) {

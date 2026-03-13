@@ -28,7 +28,9 @@ public class TimeConverterUtil {
     }
 
     private static ChronoUnit toChronoUnit(int timeGranularitySeconds) {
-        if (timeGranularitySeconds == 60) {
+        if (timeGranularitySeconds == 1) {
+            return ChronoUnit.SECONDS;
+        } else if (timeGranularitySeconds == 60) {
             return ChronoUnit.MINUTES;
         } else if (timeGranularitySeconds == 3600) {
             return ChronoUnit.HOURS;
