@@ -7,18 +7,15 @@ import mil.army.usace.hec.dss.DssTimeWindow;
 import mil.army.usace.hec.dss.internal.natives.ForeignLanguage;
 import mil.army.usace.hec.dss.internal.natives.MemoryAllocator;
 import mil.army.usace.hec.dss.internal.natives.MemoryParser;
-import mil.army.usace.hec.dss.internal.util.PrimitiveArrayUtil;
-import mil.army.usace.hec.dss.internal.util.TimeConverterUtil;
 
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
+import java.lang.foreign.ValueLayout;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
-import java.util.logging.Logger;
 
 final class DssTimeSeriesService {
-    private static final Logger logger = Logger.getLogger(DssTimeSeriesService.class.getName());
     private static final int UNITS_BUFFER_LENGTH = 100;
     private static final int DATA_TYPE_BUFFER_LENGTH = 100;
     private static final int TIMEZONE_BUFFER_LENGTH = 100;
@@ -55,10 +52,10 @@ final class DssTimeSeriesService {
 
         MemorySegment timeArrayOutput = memoryAllocator.allocateInts(numberValues);
         MemorySegment valueArrayOutput = memoryAllocator.allocateDoubles(numberValues);
-        MemorySegment numberValuesReadOutput = memoryAllocator.allocateInts(numberValues);
+        MemorySegment numberValuesReadOutput = memoryAllocator.allocateInts(1);
         MemorySegment qualityOutput = memoryAllocator.allocateInts(numberValues);
-        MemorySegment julianBaseDateOutput = memoryAllocator.allocateInts(numberValues);
-        MemorySegment timeGranularitySecondsOutput = memoryAllocator.allocateInts(numberValues);
+        MemorySegment julianBaseDateOutput = memoryAllocator.allocateInts(1);
+        MemorySegment timeGranularitySecondsOutput = memoryAllocator.allocateInts(1);
         MemorySegment dataUnitsOutput = memoryAllocator.allocateChars(unitsBufferLength);
         MemorySegment dataTypeOutput = memoryAllocator.allocateChars(dataTypeBufferLength);
         MemorySegment timeZoneNameOutput = memoryAllocator.allocateChars(timeZoneBufferLength);
@@ -87,24 +84,19 @@ final class DssTimeSeriesService {
         );
 
         if (status == 0) {
-            int[] timeArray = MemoryParser.parseInts(timeArrayOutput);
-            double[] valueArray = MemoryParser.parseDoubles(valueArrayOutput);
             int numberValuesRead = MemoryParser.parseInt(numberValuesReadOutput);
-
-            timeArray = PrimitiveArrayUtil.trimArray(timeArray, numberValuesRead);
-            valueArray = PrimitiveArrayUtil.trimArray(valueArray, numberValuesRead);
-
             int timeGranularitySeconds = MemoryParser.parseInt(timeGranularitySecondsOutput);
             String dataUnits = MemoryParser.parseString(dataUnitsOutput);
             String dataType = MemoryParser.parseString(dataTypeOutput);
 
-            boolean isValid = validateOutputs(timeArray, valueArray, numberValuesRead);
-            if (!isValid) {
-                return DssTimeSeriesImpl.empty();
-            }
+            // Zero-copy: slice the native segments to the exact number of values read
+            MemorySegment timeSlice = timeArrayOutput.asSlice(0,
+                    (long) numberValuesRead * ValueLayout.JAVA_INT.byteSize());
+            MemorySegment valueSlice = valueArrayOutput.asSlice(0,
+                    (long) numberValuesRead * ValueLayout.JAVA_DOUBLE.byteSize());
 
-            Instant[] instantTimes = TimeConverterUtil.convertToInstant(timeArray, timeGranularitySeconds);
-            return new DssTimeSeriesImpl(instantTimes, valueArray, dataUnits, dataType);
+            return new NativeTimeSeries(timeSlice, valueSlice,
+                    numberValuesRead, timeGranularitySeconds, dataUnits, dataType);
         } else {
             throw new DssException("Failed to retrieve time series");
         }
@@ -202,20 +194,5 @@ final class DssTimeSeriesService {
         OffsetDateTime offsetDateTime = OffsetDateTime.of(year, month, day, 0, 0, 0, 0, ZoneOffset.UTC)
                 .plusSeconds(seconds);
         return offsetDateTime.toInstant();
-    }
-
-    /* Validation */
-    private static boolean validateOutputs(int[] timeArray, double[] valueArray, int numberValuesRead) {
-        if (timeArray.length != valueArray.length) {
-            logger.warning("Time & Value Array Length Mismatch");
-            return false;
-        }
-
-        if (timeArray.length != numberValuesRead) {
-            logger.warning("Time & Value Array Length is different than number of values read");
-            return false;
-        }
-
-        return true;
     }
 }

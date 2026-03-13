@@ -11,6 +11,7 @@ import java.time.Instant;
 import java.time.ZonedDateTime;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 class DssTimeSeriesReaderTest {
     @Test
@@ -24,12 +25,16 @@ class DssTimeSeriesReaderTest {
             DssPathname pathname = DssPathname.parse(dssPathname).orElseThrow();
 
             DssTimeSeries allValues = hecDss.getTimeSeries(pathname);
-            assertEquals(244, allValues.times().length);
-            assertEquals(77, allValues.dropNa().times().length);
+            assertEquals(244, allValues.size());
+            assertEquals(77, allValues.dropNa().size());
+
+            // Verify indexed access works
+            assertNotNull(allValues.time(0));
+            assertNotNull(allValues.dataUnits());
 
             DssTimeWindow timeWindow = new DssTimeWindow(startTime, endTime);
             DssTimeSeries windowed = hecDss.getTimeSeries(pathname, timeWindow);
-            assertEquals(77, windowed.times().length);
+            assertEquals(77, windowed.size());
         }
     }
 
@@ -44,12 +49,12 @@ class DssTimeSeriesReaderTest {
             DssPathname pathname = DssPathname.parse(dssPathname).orElseThrow();
 
             DssTimeSeries allValues = hecDss.getTimeSeries(pathname);
-            assertEquals(113, allValues.times().length);
-            assertEquals(113, allValues.dropNa().times().length);
+            assertEquals(113, allValues.size());
+            assertEquals(113, allValues.dropNa().size());
 
             DssTimeWindow timeWindow = new DssTimeWindow(startTime, endTime);
             DssTimeSeries windowed = hecDss.getTimeSeries(pathname, timeWindow);
-            assertEquals(112, windowed.times().length);
+            assertEquals(112, windowed.size());
         }
     }
 }

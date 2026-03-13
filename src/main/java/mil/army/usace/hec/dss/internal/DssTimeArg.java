@@ -1,8 +1,7 @@
 package mil.army.usace.hec.dss.internal;
 
-import mil.army.usace.hec.dss.internal.util.TimeConverterUtil;
-
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 
 record DssTimeArg(
@@ -12,8 +11,8 @@ record DssTimeArg(
         String endTime
 ) {
     static DssTimeArg from(Instant startTime, Instant endTime) {
-        ZonedDateTime zonedStartTime = TimeConverterUtil.toZonedDateTime(startTime);
-        ZonedDateTime zonedEndTime = TimeConverterUtil.toZonedDateTime(endTime);
+        ZonedDateTime zonedStartTime = startTime.atZone(ZoneOffset.UTC);
+        ZonedDateTime zonedEndTime = endTime.atZone(ZoneOffset.UTC);
 
         String startDateString = zonedStartTime.toLocalDate().toString();
         String startTimeString = zonedStartTime.toLocalTime().toString();

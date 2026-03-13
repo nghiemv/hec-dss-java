@@ -11,10 +11,6 @@ public interface MemoryParser {
         return memorySegment.get(ValueLayout.JAVA_INT, 0);
     }
 
-    static int[] parseInts(MemorySegment memorySegment) {
-        return memorySegment.toArray(ValueLayout.JAVA_INT);
-    }
-
     static String parseString(MemorySegment memorySegment) {
         return memorySegment.getString(0);
     }
@@ -30,17 +26,5 @@ public interface MemoryParser {
         return switch (foreignLanguage) {
             case C -> "\0";
         };
-    }
-
-    static double[] parseDoubles(MemorySegment memorySegment) {
-        return memorySegment.toArray(ValueLayout.JAVA_DOUBLE);
-    }
-
-    static float parseFloat(MemorySegment memorySegment) {
-        return memorySegment.get(ValueLayout.JAVA_FLOAT, 0);
-    }
-
-    static float[] parseFloats(MemorySegment memorySegment) {
-        return memorySegment.toArray(ValueLayout.JAVA_FLOAT);
     }
 }

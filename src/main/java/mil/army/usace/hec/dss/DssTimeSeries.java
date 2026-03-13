@@ -4,34 +4,28 @@ import java.time.Instant;
 import java.util.stream.IntStream;
 
 public interface DssTimeSeries {
-    Instant[] times();
-    double[] values();
+    int size();
+    double value(int index);
+    Instant time(int index);
     String dataUnits();
     String dataType();
 
     /**
-     * Returns a new DssTimeSeries with undefined/missing values removed.
+     * Returns a view of this time series with undefined/missing values excluded.
+     * No data is copied — the returned series reads from the same backing storage.
      */
     default DssTimeSeries dropNa() {
-        double[] vals = values();
-        int[] indices = IntStream.range(0, vals.length)
-                .filter(i -> vals[i] != DssConstants.UNDEFINED_DOUBLE)
+        int[] indices = IntStream.range(0, size())
+                .filter(i -> value(i) != DssConstants.UNDEFINED_DOUBLE)
                 .toArray();
-        if (indices.length == vals.length) return this;
-        Instant[] allTimes = times();
-        Instant[] filteredTimes = new Instant[indices.length];
-        double[] filteredValues = new double[indices.length];
-        for (int i = 0; i < indices.length; i++) {
-            filteredTimes[i] = allTimes[indices[i]];
-            filteredValues[i] = vals[indices[i]];
-        }
-        String units = dataUnits();
-        String type = dataType();
+        if (indices.length == size()) return this;
+        DssTimeSeries parent = this;
         return new DssTimeSeries() {
-            @Override public Instant[] times() { return filteredTimes; }
-            @Override public double[] values() { return filteredValues; }
-            @Override public String dataUnits() { return units; }
-            @Override public String dataType() { return type; }
+            @Override public int size() { return indices.length; }
+            @Override public double value(int index) { return parent.value(indices[index]); }
+            @Override public Instant time(int index) { return parent.time(indices[index]); }
+            @Override public String dataUnits() { return parent.dataUnits(); }
+            @Override public String dataType() { return parent.dataType(); }
         };
     }
 }

@@ -29,11 +29,6 @@ final class MemoryAllocatorImpl implements MemoryAllocator {
     }
 
     @Override
-    public MemorySegment allocateFloats(int floatCount) {
-        return memorySession.allocate(foreignLanguage.getFloatLayout(), floatCount);
-    }
-
-    @Override
     public MemorySegment allocateString(String stringToAllocate) {
         return memorySession.allocateFrom(stringToAllocate);
     }
