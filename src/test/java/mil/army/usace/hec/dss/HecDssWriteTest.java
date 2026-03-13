@@ -16,7 +16,7 @@ class HecDssWriteTest {
 
     @Test
     void writeAndReadRegularTimeSeries() {
-        String dssFile = TestUtil.createTempFile("write-test.dss");
+        Path dssFile = TestUtil.createTempFile("write-test.dss");
         String pathname = "/TEST/LOCATION/FLOW/01Jan2020/1Hour/WRITE-TEST/";
 
         Instant start = ZonedDateTime.parse("2020-01-01T00:00:00Z").toInstant();
@@ -39,13 +39,13 @@ class HecDssWriteTest {
 
     @Test
     void readRegularTimeSeriesThenWriteToNewPathThenRead() throws Exception {
-        String dssFile = copyResourceToTemp("examples-all-data-types.dss");
+        Path dssFile = copyResourceToTemp("examples-all-data-types.dss");
         String readPath = "/regular-time-series/GAPT/FLOW/*/6Hour/forecast1/";
 
         Instant t1 = ZonedDateTime.parse("2021-10-01T07:00:00Z").toInstant();
         Instant t2 = ZonedDateTime.parse("2021-10-04T07:00:00Z").toInstant();
 
-        DssTimeSeries original = HecDss.readTimeSeries(dssFile, readPath, new DssTimeWindow(t1, t2));
+        DssTimeSeries original = HecDss.readTimeSeries(dssFile, readPath, t1, t2);
         int originalSize = original.size();
         assertTrue(originalSize > 0);
 
@@ -61,12 +61,12 @@ class HecDssWriteTest {
 
     @Test
     void readModifyWriteReadRegularTimeSeries() throws Exception {
-        String dssFile = copyResourceToTemp("examples-all-data-types.dss");
+        Path dssFile = copyResourceToTemp("examples-all-data-types.dss");
         String readPath = "/regular-time-series/GAPT/FLOW/*/6Hour/forecast1/";
         Instant t1 = ZonedDateTime.parse("2021-10-01T07:00:00Z").toInstant();
         Instant t2 = ZonedDateTime.parse("2021-10-04T07:00:00Z").toInstant();
 
-        DssTimeSeries original = HecDss.readTimeSeries(dssFile, readPath, new DssTimeWindow(t1, t2));
+        DssTimeSeries original = HecDss.readTimeSeries(dssFile, readPath, t1, t2);
 
         // Modify values
         double[] modifiedValues = original.values().clone();
@@ -86,7 +86,7 @@ class HecDssWriteTest {
 
     @Test
     void writeAndReadIrregularTimeSeries() {
-        String dssFile = TestUtil.createTempFile("write-irreg-test.dss");
+        Path dssFile = TestUtil.createTempFile("write-irreg-test.dss");
         String pathname = "/TEST/LOCATION/FLOW-PEAK/01Jan1990/IR-Century/WRITE-TEST/";
 
         double[] values = {1500.0, 2300.0, 1800.0};
@@ -108,7 +108,7 @@ class HecDssWriteTest {
 
     @Test
     void readIrregularTimeSeriesThenWriteToNewPathThenRead() throws Exception {
-        String dssFile = copyResourceToTemp("examples-all-data-types.dss");
+        Path dssFile = copyResourceToTemp("examples-all-data-types.dss");
         String readPath = "/irregular-time-series/FAIR OAKS CA/FLOW-ANNUAL PEAK/01Jan1900/IR-Century/USGS/";
 
         DssTimeSeries original = HecDss.readTimeSeries(dssFile, readPath);
@@ -126,7 +126,7 @@ class HecDssWriteTest {
 
     @Test
     void readModifyWriteReadIrregularTimeSeries() throws Exception {
-        String dssFile = copyResourceToTemp("examples-all-data-types.dss");
+        Path dssFile = copyResourceToTemp("examples-all-data-types.dss");
         String readPath = "/irregular-time-series/FAIR OAKS CA/FLOW-ANNUAL PEAK/01Jan1900/IR-Century/USGS/";
 
         DssTimeSeries original = HecDss.readTimeSeries(dssFile, readPath);
@@ -148,7 +148,7 @@ class HecDssWriteTest {
 
     @Test
     void writeAndReadPairedData() {
-        String dssFile = TestUtil.createTempFile("paired-test.dss");
+        Path dssFile = TestUtil.createTempFile("paired-test.dss");
         String pathname = "/TEST/LOCATION/STAGE-FLOW///RATING/";
 
         double[] ordinates = {0.0, 1.0, 2.0, 3.0, 4.0};
@@ -169,7 +169,7 @@ class HecDssWriteTest {
 
     @Test
     void readPairedDataFromExistingFile() throws Exception {
-        String dssFile = copyResourceToTemp("sample7.dss");
+        Path dssFile = copyResourceToTemp("sample7.dss");
         String pathname = "/MY BASIN/DEER CREEK/STAGE-FLOW///USGS/";
 
         DssPairedData pd = HecDss.readPairedData(dssFile, pathname);
@@ -181,7 +181,7 @@ class HecDssWriteTest {
 
     @Test
     void readPairedDataWriteToNewPathRead() throws Exception {
-        String dssFile = copyResourceToTemp("sample7.dss");
+        Path dssFile = copyResourceToTemp("sample7.dss");
         String readPath = "/MY BASIN/DEER CREEK/STAGE-FLOW///USGS/";
         String writePath = "/MY BASIN/DEER CREEK/STAGE-FLOW///USGS-copy/";
 
@@ -198,7 +198,7 @@ class HecDssWriteTest {
 
     @Test
     void writeMultiCurvePairedDataThenRead() {
-        String dssFile = TestUtil.createTempFile("multi-curve-test.dss");
+        Path dssFile = TestUtil.createTempFile("multi-curve-test.dss");
         String pathname = "/TEST/LOCATION/STAGE-FLOW///MULTI-CURVE/";
 
         double[] ordinates = {0.0, 11.0, 22.0, 33.0, 44.0};
@@ -227,7 +227,7 @@ class HecDssWriteTest {
 
     @Test
     void readMultiCurvePairedDataFromExistingFile() throws Exception {
-        String dssFile = copyResourceToTemp("R703F3-PF_v7.dss");
+        Path dssFile = copyResourceToTemp("R703F3-PF_v7.dss");
         String pathname = "/FOLSOM/AUXILIARY SPILLWAY-GATE RATING/ELEV-FLOW/PAIREDVALUESEXT///";
 
         DssPairedData pd = HecDss.readPairedData(dssFile, pathname);
@@ -238,7 +238,7 @@ class HecDssWriteTest {
 
     @Test
     void readMultiCurvePairedDataModifyLabelsRoundTrip() throws Exception {
-        String dssFile = copyResourceToTemp("R703F3-PF_v7.dss");
+        Path dssFile = copyResourceToTemp("R703F3-PF_v7.dss");
         String readPath = "/FOLSOM/AUXILIARY SPILLWAY-GATE RATING/ELEV-FLOW/PAIREDVALUESEXT///";
         String writePath = "/FOLSOM/AUXILIARY SPILLWAY-GATE RATING/ELEV-FLOW/PAIREDVALUESEXT//label-test/";
 
@@ -273,7 +273,7 @@ class HecDssWriteTest {
 
     @Test
     void readGridFromExistingFile() throws Exception {
-        String dssFile = copyResourceToTemp("grid-example.dss");
+        Path dssFile = copyResourceToTemp("grid-example.dss");
         String pathname = "/grid/EAU GALLA RIVER/SNOW MELT/02FEB2020:0600/03FEB2020:0600/SHG-SNODAS/";
 
         DssGrid grid = HecDss.readGrid(dssFile, pathname);
@@ -284,7 +284,7 @@ class HecDssWriteTest {
 
     @Test
     void readGridWriteToNewPathThenRead() throws Exception {
-        String dssFile = copyResourceToTemp("grid-example.dss");
+        Path dssFile = copyResourceToTemp("grid-example.dss");
         String readPath = "/grid/EAU GALLA RIVER/SNOW MELT/02FEB2020:0600/03FEB2020:0600/SHG-SNODAS/";
         String writePath = "/grid/EAU GALLA RIVER/SNOW MELT/02FEB2020:0600/03FEB2020:0600/SHG-SNODAS-copy/";
 
@@ -299,7 +299,7 @@ class HecDssWriteTest {
 
     @Test
     void writeNewGridThenRead() {
-        String dssFile = TestUtil.createTempFile("grid-write-test.dss");
+        Path dssFile = TestUtil.createTempFile("grid-write-test.dss");
         String pathname = "/grid/new/gradient/01MAY2024:1400/01MAY2024:1400/new-grad/";
 
         int cellsX = 50, cellsY = 50;
@@ -325,43 +325,40 @@ class HecDssWriteTest {
 
     @Test
     void writeAndReadArray() {
-        String dssFile = TestUtil.createTempFile("array-test.dss");
+        Path dssFile = TestUtil.createTempFile("array-test.dss");
         String pathname = "/test/array/data////";
 
-        DssArray input = new DssArray(new double[]{1.0, 3.0, 5.0, 7.0});
-        HecDss.writeArray(dssFile, pathname, input);
+        HecDss.writeArray(dssFile, pathname, new double[]{1.0, 3.0, 5.0, 7.0});
 
-        DssArray output = HecDss.readArray(dssFile, pathname);
-        assertArrayEquals(new double[]{1.0, 3.0, 5.0, 7.0}, output.values(), 0.01);
+        double[] output = HecDss.readArray(dssFile, pathname);
+        assertArrayEquals(new double[]{1.0, 3.0, 5.0, 7.0}, output, 0.01);
     }
 
     @Test
     void writeModifyWriteReadArray() {
-        String dssFile = TestUtil.createTempFile("array-modify-test.dss");
+        Path dssFile = TestUtil.createTempFile("array-modify-test.dss");
         String path1 = "/TEST/LOCATION/DATA///ARRAY-ORIG/";
         String path2 = "/TEST/LOCATION/DATA///ARRAY-MODIFIED/";
 
-        DssArray input = new DssArray(new double[]{10.0, 20.0, 30.0});
-        HecDss.writeArray(dssFile, path1, input);
+        HecDss.writeArray(dssFile, path1, new double[]{10.0, 20.0, 30.0});
 
-        DssArray read = HecDss.readArray(dssFile, path1);
+        double[] read = HecDss.readArray(dssFile, path1);
 
         // Modify values
-        double[] modified = read.values();
-        for (int i = 0; i < modified.length; i++) {
-            modified[i] *= 2;
+        for (int i = 0; i < read.length; i++) {
+            read[i] *= 2;
         }
-        HecDss.writeArray(dssFile, path2, new DssArray(modified));
+        HecDss.writeArray(dssFile, path2, read);
 
-        DssArray reread = HecDss.readArray(dssFile, path2);
-        assertArrayEquals(new double[]{20.0, 40.0, 60.0}, reread.values(), 0.01);
+        double[] reread = HecDss.readArray(dssFile, path2);
+        assertArrayEquals(new double[]{20.0, 40.0, 60.0}, reread, 0.01);
     }
 
     // ---- Text ----
 
     @Test
     void writeAndReadText() {
-        String dssFile = TestUtil.createTempFile("text-test.dss");
+        Path dssFile = TestUtil.createTempFile("text-test.dss");
         String pathname = "/TEST/LOCATION/NOTE//TEXT/VERSION/";
 
         String text = "Hello, DSS! This is a test text record.";
@@ -373,7 +370,7 @@ class HecDssWriteTest {
 
     @Test
     void writeAndReadMultilineText() {
-        String dssFile = TestUtil.createTempFile("text-multiline-test.dss");
+        Path dssFile = TestUtil.createTempFile("text-multiline-test.dss");
         String pathname = "/A/B/C/D/E/F/";
 
         String text = "This is a test\nof text data\nin a DSS file.\n";
@@ -387,7 +384,7 @@ class HecDssWriteTest {
 
     @Test
     void writeAndReadLocationInfo() {
-        String dssFile = TestUtil.createTempFile("location-test.dss");
+        Path dssFile = TestUtil.createTempFile("location-test.dss");
         String pathname = "/TEST/LOCATION/DATA///LOC-TEST/";
 
         DssLocationInfo input = DssLocationInfo.of(38.5, -121.5, 100.0, "UTC");
@@ -402,7 +399,7 @@ class HecDssWriteTest {
 
     @Test
     void readLocationInfoFromExistingFile() throws Exception {
-        String dssFile = copyResourceToTemp("sample7.dss");
+        Path dssFile = copyResourceToTemp("sample7.dss");
         String pathname = "/MISSISSIPPI/ST. LOUIS/Location Info////";
 
         DssLocationInfo loc = HecDss.readLocationInfo(dssFile, pathname);
@@ -411,7 +408,7 @@ class HecDssWriteTest {
 
     @Test
     void readLocationInfoWriteToNewPathRead() throws Exception {
-        String dssFile = copyResourceToTemp("sample7.dss");
+        Path dssFile = copyResourceToTemp("sample7.dss");
         String readPath = "/MISSISSIPPI/ST. LOUIS/Location Info////";
         String writePath = "/MISSISSIPPI/ST. LOUIS/Location Info///newPath/";
 
@@ -434,7 +431,7 @@ class HecDssWriteTest {
 
     @Test
     void readModifyWriteReadLocationInfo() throws Exception {
-        String dssFile = copyResourceToTemp("sample7.dss");
+        Path dssFile = copyResourceToTemp("sample7.dss");
         String readPath = "/MISSISSIPPI/ST. LOUIS/Location Info////";
         String writePath = "/MISSISSIPPI/ST. LOUIS/Location Info///modified/";
 
@@ -457,18 +454,18 @@ class HecDssWriteTest {
 
     @Test
     void deleteRecordVerifyGone() throws Exception {
-        String dssFile = copyResourceToTemp("sample7.dss");
+        Path dssFile = copyResourceToTemp("sample7.dss");
         String pathname = "//SACRAMENTO/PRECIP-INC//1Day/OBS/";
 
         Instant t1 = ZonedDateTime.parse("2005-01-01T00:00:00Z").toInstant();
         Instant t2 = ZonedDateTime.parse("2005-01-04T00:00:00Z").toInstant();
-        DssTimeSeries ts = HecDss.readTimeSeries(dssFile, pathname, new DssTimeWindow(t1, t2));
+        DssTimeSeries ts = HecDss.readTimeSeries(dssFile, pathname, t1, t2);
         assertTrue(ts.size() > 0);
 
         String newPath = "//SACRAMENTO/PRECIP-INC//1Day/OBS-to-delete/";
         HecDss.writeTimeSeries(dssFile, newPath, ts);
 
-        DssTimeSeries written = HecDss.readTimeSeries(dssFile, newPath, new DssTimeWindow(t1, t2));
+        DssTimeSeries written = HecDss.readTimeSeries(dssFile, newPath, t1, t2);
         assertEquals(ts.size(), written.size());
 
         var catalog = HecDss.getCatalog(dssFile);
@@ -479,12 +476,12 @@ class HecDssWriteTest {
         }
 
         assertThrows(DssException.class, () ->
-                HecDss.readTimeSeries(dssFile, newPath, new DssTimeWindow(t1, t2)));
+                HecDss.readTimeSeries(dssFile, newPath, t1, t2));
     }
 
     @Test
     void deleteTextRecord() {
-        String dssFile = TestUtil.createTempFile("delete-text-test.dss");
+        Path dssFile = TestUtil.createTempFile("delete-text-test.dss");
         String pathname = "/TEST/LOCATION/NOTE//TEXT/TO-DELETE/";
 
         HecDss.writeText(dssFile, pathname, "This will be deleted");
@@ -495,10 +492,10 @@ class HecDssWriteTest {
 
     // ---- Helpers ----
 
-    private static String copyResourceToTemp(String resourceName) throws Exception {
+    private static Path copyResourceToTemp(String resourceName) throws Exception {
         Path source = TestUtil.getResourceFile(resourceName);
         Path temp = Files.createTempFile(resourceName.replace(".dss", ""), ".dss");
         Files.copy(source, temp, StandardCopyOption.REPLACE_EXISTING);
-        return temp.toAbsolutePath().toString();
+        return temp;
     }
 }

@@ -2,6 +2,8 @@ package mil.army.usace.hec.dss;
 
 import mil.army.usace.hec.dss.internal.*;
 
+import java.nio.file.Path;
+import java.time.Instant;
 import java.util.List;
 
 /**
@@ -17,10 +19,10 @@ public final class HecDss {
      * Reads a time series record from a DSS file.
      * Works for both regular and irregular time series.
      */
-    public static DssTimeSeries readTimeSeries(String filename, String pathname) {
+    public static DssTimeSeries readTimeSeries(Path file, String pathname) {
         DssPathname parsed = parseAndValidate(pathname);
         DssPathname normalized = parsed.with(DssPathname.Part.D, "*");
-        try (DssSession session = DssSession.open(filename)) {
+        try (DssSession session = DssSession.open(file)) {
             return TimeSeriesReader.read(session, normalized);
         }
     }
@@ -29,12 +31,12 @@ public final class HecDss {
      * Reads a time series record within a time window.
      * Works for both regular and irregular time series.
      */
-    public static DssTimeSeries readTimeSeries(String filename, String pathname,
-                                               DssTimeWindow timeWindow) {
+    public static DssTimeSeries readTimeSeries(Path file, String pathname,
+                                               Instant start, Instant end) {
         DssPathname parsed = parseAndValidate(pathname);
         DssPathname normalized = parsed.with(DssPathname.Part.D, "*");
-        try (DssSession session = DssSession.open(filename)) {
-            return TimeSeriesReader.read(session, normalized, timeWindow);
+        try (DssSession session = DssSession.open(file)) {
+            return TimeSeriesReader.read(session, normalized, start, end);
         }
     }
 
@@ -42,9 +44,9 @@ public final class HecDss {
      * Writes a time series to a DSS file.
      * Automatically selects regular or irregular storage based on the E-part.
      */
-    public static void writeTimeSeries(String filename, String pathname, DssTimeSeries data) {
+    public static void writeTimeSeries(Path file, String pathname, DssTimeSeries data) {
         DssPathname parsed = parseAndValidate(pathname);
-        try (DssSession session = DssSession.open(filename)) {
+        try (DssSession session = DssSession.open(file)) {
             TimeSeriesWriter.write(session, parsed, data);
         }
     }
@@ -54,9 +56,9 @@ public final class HecDss {
     /**
      * Reads paired data (x/y curves) from a DSS file.
      */
-    public static DssPairedData readPairedData(String filename, String pathname) {
+    public static DssPairedData readPairedData(Path file, String pathname) {
         DssPathname parsed = parseAndValidate(pathname);
-        try (DssSession session = DssSession.open(filename)) {
+        try (DssSession session = DssSession.open(file)) {
             return PairedDataReader.read(session, parsed);
         }
     }
@@ -64,9 +66,9 @@ public final class HecDss {
     /**
      * Writes paired data to a DSS file.
      */
-    public static void writePairedData(String filename, String pathname, DssPairedData data) {
+    public static void writePairedData(Path file, String pathname, DssPairedData data) {
         DssPathname parsed = parseAndValidate(pathname);
-        try (DssSession session = DssSession.open(filename)) {
+        try (DssSession session = DssSession.open(file)) {
             PairedDataWriter.write(session, parsed, data);
         }
     }
@@ -76,9 +78,9 @@ public final class HecDss {
     /**
      * Reads a grid record from a DSS file.
      */
-    public static DssGrid readGrid(String filename, String pathname) {
+    public static DssGrid readGrid(Path file, String pathname) {
         DssPathname parsed = parseAndValidate(pathname);
-        try (DssSession session = DssSession.open(filename)) {
+        try (DssSession session = DssSession.open(file)) {
             return GridReader.read(session, parsed);
         }
     }
@@ -86,9 +88,9 @@ public final class HecDss {
     /**
      * Writes a grid record to a DSS file.
      */
-    public static void writeGrid(String filename, String pathname, DssGrid data) {
+    public static void writeGrid(Path file, String pathname, DssGrid data) {
         DssPathname parsed = parseAndValidate(pathname);
-        try (DssSession session = DssSession.open(filename)) {
+        try (DssSession session = DssSession.open(file)) {
             GridWriter.write(session, parsed, data);
         }
     }
@@ -98,9 +100,9 @@ public final class HecDss {
     /**
      * Reads an array record from a DSS file.
      */
-    public static DssArray readArray(String filename, String pathname) {
+    public static double[] readArray(Path file, String pathname) {
         DssPathname parsed = parseAndValidate(pathname);
-        try (DssSession session = DssSession.open(filename)) {
+        try (DssSession session = DssSession.open(file)) {
             return ArrayReader.read(session, parsed);
         }
     }
@@ -108,9 +110,9 @@ public final class HecDss {
     /**
      * Writes an array record to a DSS file.
      */
-    public static void writeArray(String filename, String pathname, DssArray data) {
+    public static void writeArray(Path file, String pathname, double[] data) {
         DssPathname parsed = parseAndValidate(pathname);
-        try (DssSession session = DssSession.open(filename)) {
+        try (DssSession session = DssSession.open(file)) {
             ArrayWriter.write(session, parsed, data);
         }
     }
@@ -120,9 +122,9 @@ public final class HecDss {
     /**
      * Reads a text record from a DSS file.
      */
-    public static String readText(String filename, String pathname) {
+    public static String readText(Path file, String pathname) {
         DssPathname parsed = parseAndValidate(pathname);
-        try (DssSession session = DssSession.open(filename)) {
+        try (DssSession session = DssSession.open(file)) {
             return TextReader.read(session, parsed);
         }
     }
@@ -130,9 +132,9 @@ public final class HecDss {
     /**
      * Writes a text record to a DSS file.
      */
-    public static void writeText(String filename, String pathname, String text) {
+    public static void writeText(Path file, String pathname, String text) {
         DssPathname parsed = parseAndValidate(pathname);
-        try (DssSession session = DssSession.open(filename)) {
+        try (DssSession session = DssSession.open(file)) {
             TextWriter.write(session, parsed, text);
         }
     }
@@ -142,9 +144,9 @@ public final class HecDss {
     /**
      * Reads location metadata from a DSS file.
      */
-    public static DssLocationInfo readLocationInfo(String filename, String pathname) {
+    public static DssLocationInfo readLocationInfo(Path file, String pathname) {
         DssPathname parsed = parseAndValidate(pathname);
-        try (DssSession session = DssSession.open(filename)) {
+        try (DssSession session = DssSession.open(file)) {
             return LocationInfoReader.read(session, parsed);
         }
     }
@@ -152,9 +154,9 @@ public final class HecDss {
     /**
      * Writes location metadata to a DSS file.
      */
-    public static void writeLocationInfo(String filename, String pathname, DssLocationInfo info) {
+    public static void writeLocationInfo(Path file, String pathname, DssLocationInfo info) {
         DssPathname parsed = parseAndValidate(pathname);
-        try (DssSession session = DssSession.open(filename)) {
+        try (DssSession session = DssSession.open(file)) {
             LocationInfoWriter.write(session, parsed, info);
         }
     }
@@ -164,8 +166,8 @@ public final class HecDss {
     /**
      * Returns all pathnames in a DSS file.
      */
-    public static List<DssPathname> getCatalog(String filename) {
-        try (DssSession session = DssSession.open(filename)) {
+    public static List<DssPathname> getCatalog(Path file) {
+        try (DssSession session = DssSession.open(file)) {
             return CatalogReader.read(session);
         }
     }
@@ -173,8 +175,8 @@ public final class HecDss {
     /**
      * Returns the number of records in a DSS file.
      */
-    public static int getRecordCount(String filename) {
-        try (DssSession session = DssSession.open(filename)) {
+    public static int getRecordCount(Path file) {
+        try (DssSession session = DssSession.open(file)) {
             return CatalogReader.recordCount(session);
         }
     }
@@ -184,9 +186,9 @@ public final class HecDss {
     /**
      * Returns the type of data stored at the given pathname.
      */
-    public static DssRecordType getRecordType(String filename, String pathname) {
+    public static DssRecordType getRecordType(Path file, String pathname) {
         DssPathname parsed = parseAndValidate(pathname);
-        try (DssSession session = DssSession.open(filename)) {
+        try (DssSession session = DssSession.open(file)) {
             return RecordTypeReader.read(session, parsed);
         }
     }
@@ -194,9 +196,9 @@ public final class HecDss {
     /**
      * Deletes a single record from a DSS file.
      */
-    public static void delete(String filename, String pathname) {
+    public static void delete(Path file, String pathname) {
         DssPathname parsed = parseAndValidate(pathname);
-        try (DssSession session = DssSession.open(filename)) {
+        try (DssSession session = DssSession.open(file)) {
             DeleteOperation.delete(session, parsed);
         }
     }
@@ -204,8 +206,8 @@ public final class HecDss {
     /**
      * Compresses a DSS file, reclaiming space from deleted records.
      */
-    public static void squeeze(String filename) {
-        SqueezeOperation.squeeze(filename);
+    public static void squeeze(Path file) {
+        SqueezeOperation.squeeze(file);
     }
 
     private static DssPathname parseAndValidate(String pathname) {

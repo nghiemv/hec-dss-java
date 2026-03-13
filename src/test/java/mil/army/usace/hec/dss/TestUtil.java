@@ -25,13 +25,13 @@ public class TestUtil {
         }
     }
 
-    public static String createTempFile(String fileName) {
+    public static Path createTempFile(String fileName) {
         int index = fileName.lastIndexOf(".");
         boolean hasExtension = index > 0;
         String prefix = hasExtension ? fileName.substring(0, index) : fileName;
         String suffix = hasExtension ? fileName.substring(index) : "";
         try {
-            return Files.createTempFile(prefix, suffix).toAbsolutePath().toString();
+            return Files.createTempFile(prefix, suffix);
         } catch (IOException e) {
             throw new UncheckedIOException("Cannot create temp file: " + fileName, e);
         }

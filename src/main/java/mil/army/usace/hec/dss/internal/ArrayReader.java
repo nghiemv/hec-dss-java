@@ -1,6 +1,5 @@
 package mil.army.usace.hec.dss.internal;
 
-import mil.army.usace.hec.dss.DssArray;
 import mil.army.usace.hec.dss.DssException;
 import mil.army.usace.hec.dss.DssPathname;
 
@@ -13,7 +12,7 @@ import static mil.army.usace.hec.dss.internal.hecdss_h$shared.*;
 public final class ArrayReader {
     private ArrayReader() {}
 
-    public static DssArray read(DssSession session, DssPathname pathname) {
+    public static double[] read(DssSession session, DssPathname pathname) {
         Arena arena = session.arena();
 
         // Get sizes first
@@ -68,6 +67,6 @@ public final class ArrayReader {
             values[offset++] = doubleOutput.getAtIndex(ValueLayout.JAVA_DOUBLE, i);
         }
 
-        return new DssArray(values);
+        return values;
     }
 }

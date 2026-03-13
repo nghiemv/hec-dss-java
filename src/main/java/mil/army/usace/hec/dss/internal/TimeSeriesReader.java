@@ -3,7 +3,6 @@ package mil.army.usace.hec.dss.internal;
 import mil.army.usace.hec.dss.DssPathname;
 import mil.army.usace.hec.dss.DssException;
 import mil.army.usace.hec.dss.DssTimeSeries;
-import mil.army.usace.hec.dss.DssTimeWindow;
 
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
@@ -20,14 +19,14 @@ public final class TimeSeriesReader {
     private TimeSeriesReader() {}
 
     public static DssTimeSeries read(DssSession session, DssPathname pathname) {
-        DssTimeWindow range = readRange(session, pathname);
-        return read(session, pathname, range);
+        Instant[] range = readRange(session, pathname);
+        return read(session, pathname, range[0], range[1]);
     }
 
     public static DssTimeSeries read(DssSession session, DssPathname pathname,
-                                     DssTimeWindow timeWindow) {
+                                     Instant start, Instant end) {
         Arena arena = session.arena();
-        NativeDateFormat time = NativeDateFormat.from(timeWindow.start(), timeWindow.end());
+        NativeDateFormat time = NativeDateFormat.from(start, end);
 
         // Allocate date/time strings once — reused for both sizing and retrieval calls
         MemorySegment pathnameInput = arena.allocateFrom(pathname.toString());
@@ -81,7 +80,7 @@ public final class TimeSeriesReader {
             throw new DssException(
                     "Failed to retrieve time series '%s' from '%s': native status code %d (time window: %s to %s)"
                             .formatted(pathname, session.filePath(), status,
-                                    timeWindow.start(), timeWindow.end()));
+                                    start, end));
         }
 
         int count = numberValuesReadOutput.get(C_INT, 0);
@@ -108,7 +107,7 @@ public final class TimeSeriesReader {
         return new DssTimeSeries(times, values, units, type);
     }
 
-    private static DssTimeWindow readRange(DssSession session, DssPathname pathname) {
+    private static Instant[] readRange(DssSession session, DssPathname pathname) {
         Arena arena = session.arena();
 
         MemorySegment pathnameInput = arena.allocateFrom(pathname.toString());
@@ -134,7 +133,7 @@ public final class TimeSeriesReader {
         Instant end = julianToInstant(session,
                 lastJulianOutput.get(C_INT, 0), lastSecondsOutput.get(C_INT, 0));
 
-        return new DssTimeWindow(start, end);
+        return new Instant[]{start, end};
     }
 
     private static Instant julianToInstant(DssSession session, int julian, int seconds) {

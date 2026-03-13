@@ -1,6 +1,5 @@
 package mil.army.usace.hec.dss.internal;
 
-import mil.army.usace.hec.dss.DssArray;
 import mil.army.usace.hec.dss.DssException;
 import mil.army.usace.hec.dss.DssPathname;
 
@@ -12,12 +11,12 @@ import static mil.army.usace.hec.dss.internal.hecdss_h$shared.*;
 public final class ArrayWriter {
     private ArrayWriter() {}
 
-    public static void write(DssSession session, DssPathname pathname, DssArray data) {
+    public static void write(DssSession session, DssPathname pathname, double[] data) {
         Arena arena = session.arena();
 
         MemorySegment pathnameInput = arena.allocateFrom(pathname.toString());
 
-        double[] doubles = data.values();
+        double[] doubles = data;
         MemorySegment intInput = arena.allocate(C_INT, 1);
         MemorySegment floatInput = arena.allocate(C_FLOAT, 1);
         MemorySegment doubleInput = NativeBuffers.allocateDoubles(arena, doubles);

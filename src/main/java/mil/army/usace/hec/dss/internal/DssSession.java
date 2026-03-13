@@ -5,6 +5,7 @@ import mil.army.usace.hec.dss.DssException;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
+import java.nio.file.Path;
 import java.util.logging.Logger;
 
 import static mil.army.usace.hec.dss.internal.hecdss_h$shared.*;
@@ -12,23 +13,24 @@ import static mil.army.usace.hec.dss.internal.hecdss_h$shared.*;
 public final class DssSession implements AutoCloseable {
     private static final Logger logger = Logger.getLogger(DssSession.class.getName());
 
-    private final String filePath;
+    private final Path filePath;
     private final Arena arena;
     private final MemorySegment dssPointer;
     private boolean closed;
 
-    private DssSession(String filePath, Arena arena, MemorySegment dssPointer) {
+    private DssSession(Path filePath, Arena arena, MemorySegment dssPointer) {
         this.filePath = filePath;
         this.arena = arena;
         this.dssPointer = dssPointer;
     }
 
-    public static DssSession open(String filePath) {
+    public static DssSession open(Path filePath) {
         NativeLibrary.load();
 
+        String pathString = filePath.toAbsolutePath().toString();
         Arena arena = Arena.ofConfined();
         try {
-            MemorySegment pathHolder = arena.allocateFrom(filePath);
+            MemorySegment pathHolder = arena.allocateFrom(pathString);
             MemorySegment pointerHolder = arena.allocate(C_POINTER);
             int status = hecdss_h.hec_dss_open(pathHolder, pointerHolder);
 
@@ -49,7 +51,7 @@ public final class DssSession implements AutoCloseable {
         }
     }
 
-    String filePath() {
+    Path filePath() {
         return filePath;
     }
 
