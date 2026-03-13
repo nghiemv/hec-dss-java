@@ -22,12 +22,14 @@ class DssTimeSeriesReaderTest {
 
         try (HecDss hecDss = HecDss.open(dssFileName)) {
             DssPathname pathname = DssPathname.parse(dssPathname).orElseThrow();
-            DssTimeSeries dssTimeSeries = hecDss.getTimeSeries(pathname);
-            assertEquals(77, dssTimeSeries.times().length);
+
+            DssTimeSeries allValues = hecDss.getTimeSeries(pathname);
+            assertEquals(244, allValues.times().length);
+            assertEquals(77, allValues.dropNa().times().length);
 
             DssTimeWindow timeWindow = new DssTimeWindow(startTime, endTime);
-            DssTimeSeries dssTimeSeriesSpecific = hecDss.getTimeSeries(pathname, timeWindow);
-            assertEquals(77, dssTimeSeriesSpecific.times().length);
+            DssTimeSeries windowed = hecDss.getTimeSeries(pathname, timeWindow);
+            assertEquals(77, windowed.times().length);
         }
     }
 
@@ -40,12 +42,14 @@ class DssTimeSeriesReaderTest {
 
         try (HecDss hecDss = HecDss.open(dssFileName)) {
             DssPathname pathname = DssPathname.parse(dssPathname).orElseThrow();
-            DssTimeSeries dssTimeSeries = hecDss.getTimeSeries(pathname);
-            assertEquals(112, dssTimeSeries.times().length);
+
+            DssTimeSeries allValues = hecDss.getTimeSeries(pathname);
+            assertEquals(113, allValues.times().length);
+            assertEquals(113, allValues.dropNa().times().length);
 
             DssTimeWindow timeWindow = new DssTimeWindow(startTime, endTime);
-            DssTimeSeries dssTimeSeriesSpecific = hecDss.getTimeSeries(pathname, timeWindow);
-            assertEquals(112, dssTimeSeriesSpecific.times().length);
+            DssTimeSeries windowed = hecDss.getTimeSeries(pathname, timeWindow);
+            assertEquals(112, windowed.times().length);
         }
     }
 }

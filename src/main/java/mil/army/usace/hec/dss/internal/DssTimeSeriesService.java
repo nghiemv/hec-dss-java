@@ -149,7 +149,7 @@ final class DssTimeSeriesService {
 
         MemorySegment dssPointer = dssSession.getDssStackPointer();
         MemorySegment dssPathnameInput = memoryAllocator.allocateString(dssPathname.toString());
-        int boolFullSet = 1; // Returning the full dataset
+        int boolFullSet = 1;
         MemorySegment firstValidJulianOutput = memoryAllocator.allocateInts(1);
         MemorySegment firstSecondsOutput = memoryAllocator.allocateInts(1);
         MemorySegment lastValidJulianOutput = memoryAllocator.allocateInts(1);
