@@ -1,7 +1,7 @@
 package mil.army.usace.hec.dss.internal;
 
-import mil.army.usace.hec.dss.DssException;
 import mil.army.usace.hec.dss.DssPathname;
+import mil.army.usace.hec.dss.DssException;
 import mil.army.usace.hec.dss.DssTimeSeries;
 import mil.army.usace.hec.dss.DssTimeWindow;
 
@@ -23,13 +23,13 @@ public final class TimeSeriesReader {
 
     private TimeSeriesReader() {}
 
-    public static DssTimeSeries read(DssSession session, DssPathname pathname) throws DssException {
+    public static DssTimeSeries read(DssSession session, DssPathname pathname) {
         DssTimeWindow range = readRange(session, pathname);
         return read(session, pathname, range);
     }
 
     public static DssTimeSeries read(DssSession session, DssPathname pathname,
-                                     DssTimeWindow timeWindow) throws DssException {
+                                     DssTimeWindow timeWindow) {
         Arena arena = session.arena();
         NativeDateFormat time = NativeDateFormat.from(timeWindow.start(), timeWindow.end());
 
@@ -65,8 +65,10 @@ public final class TimeSeriesReader {
         );
 
         if (status != 0) {
-            throw new DssException("Failed to retrieve time series '%s': status=%d"
-                    .formatted(pathname, status));
+            throw new DssException(
+                    "Failed to retrieve time series '%s' from '%s': native status code %d (time window: %s to %s)"
+                            .formatted(pathname, session.filePath(), status,
+                                    timeWindow.start(), timeWindow.end()));
         }
 
         int count = numberValuesReadOutput.get(C_INT, 0);
@@ -90,7 +92,7 @@ public final class TimeSeriesReader {
     }
 
     private static int[] readSizes(DssSession session, DssPathname pathname,
-                                   NativeDateFormat time) throws DssException {
+                                   NativeDateFormat time) {
         Arena arena = session.arena();
 
         MemorySegment pathnameInput = arena.allocateFrom(pathname.toString());
@@ -108,8 +110,9 @@ public final class TimeSeriesReader {
         );
 
         if (status != 0) {
-            throw new DssException("Failed to get time series sizes for '%s': status=%d"
-                    .formatted(pathname, status));
+            throw new DssException(
+                    "Failed to get time series sizes for '%s' from '%s': native status code %d"
+                            .formatted(pathname, session.filePath(), status));
         }
 
         return new int[]{
@@ -118,7 +121,7 @@ public final class TimeSeriesReader {
         };
     }
 
-    private static DssTimeWindow readRange(DssSession session, DssPathname pathname) throws DssException {
+    private static DssTimeWindow readRange(DssSession session, DssPathname pathname) {
         Arena arena = session.arena();
 
         MemorySegment pathnameInput = arena.allocateFrom(pathname.toString());
@@ -134,8 +137,9 @@ public final class TimeSeriesReader {
         );
 
         if (status != 0) {
-            throw new DssException("Failed to get time series range for '%s': status=%d"
-                    .formatted(pathname, status));
+            throw new DssException(
+                    "Failed to get date range for '%s' from '%s': native status code %d"
+                            .formatted(pathname, session.filePath(), status));
         }
 
         Instant start = julianToInstant(session,

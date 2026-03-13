@@ -21,7 +21,7 @@ public final class HecDss {
      * @param pathname the DSS pathname (e.g. "/FOLSOM/FLOW/01JAN2000/1HOUR/RUN1/")
      * @throws DssException if the file cannot be opened or the record cannot be read
      */
-    public static DssTimeSeries readTimeSeries(String filename, String pathname) throws DssException {
+    public static DssTimeSeries readTimeSeries(String filename, String pathname) {
         DssPathname parsed = parseAndValidate(pathname);
         DssPathname normalized = parsed.with(DssPathname.Part.D, "*");
         try (DssSession session = DssSession.open(filename)) {
@@ -39,7 +39,7 @@ public final class HecDss {
      * @throws DssException if the file cannot be opened or the record cannot be read
      */
     public static DssTimeSeries readTimeSeries(String filename, String pathname,
-                                               DssTimeWindow timeWindow) throws DssException {
+                                               DssTimeWindow timeWindow) {
         DssPathname parsed = parseAndValidate(pathname);
         DssPathname normalized = parsed.with(DssPathname.Part.D, "*");
         try (DssSession session = DssSession.open(filename)) {
@@ -53,7 +53,7 @@ public final class HecDss {
      * @param filename the path to the DSS file
      * @throws DssException if the file cannot be opened
      */
-    public static List<DssPathname> getCatalog(String filename) throws DssException {
+    public static List<DssPathname> getCatalog(String filename) {
         try (DssSession session = DssSession.open(filename)) {
             return CatalogReader.read(session);
         }
@@ -65,17 +65,20 @@ public final class HecDss {
      * @param filename the path to the DSS file
      * @throws DssException if the file cannot be opened
      */
-    public static int getRecordCount(String filename) throws DssException {
+    public static int getRecordCount(String filename) {
         try (DssSession session = DssSession.open(filename)) {
             return CatalogReader.recordCount(session);
         }
     }
 
-    private static DssPathname parseAndValidate(String pathname) throws DssException {
+    private static DssPathname parseAndValidate(String pathname) {
         DssPathname parsed = DssPathname.parse(pathname)
-                .orElseThrow(() -> new DssException("Invalid DSS pathname: " + pathname));
+                .orElseThrow(() -> new DssException(
+                        "Invalid DSS pathname format '%s': expected /A/B/C/D/E/F/".formatted(pathname)));
         if (parsed.hasWildcardRecordParts()) {
-            throw new DssException("Pathname contains wildcards in record-identifying parts: " + pathname);
+            throw new DssException(
+                    "Pathname '%s' contains wildcards in record-identifying parts (A, B, C, E, or F)"
+                            .formatted(pathname));
         }
         return parsed;
     }

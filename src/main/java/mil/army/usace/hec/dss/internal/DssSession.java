@@ -23,7 +23,7 @@ public final class DssSession implements AutoCloseable {
         this.dssPointer = dssPointer;
     }
 
-    public static DssSession open(String filePath) throws DssException {
+    public static DssSession open(String filePath) {
         NativeLibrary.load();
 
         Arena arena = Arena.ofConfined();
@@ -33,8 +33,8 @@ public final class DssSession implements AutoCloseable {
             int status = hecdss_h.hec_dss_open(pathHolder, pointerHolder);
 
             if (status != 0) {
-                throw new DssException("Failed to open DSS file '%s': status=%d"
-                        .formatted(filePath, status));
+                throw new DssException(
+                        "Cannot open DSS file '%s': native status code %d".formatted(filePath, status));
             }
 
             MemorySegment dssPointer = pointerHolder.get(ValueLayout.ADDRESS, 0);
@@ -44,8 +44,13 @@ public final class DssSession implements AutoCloseable {
             throw e;
         } catch (Exception e) {
             arena.close();
-            throw new DssException("Failed to open DSS file '%s'".formatted(filePath), e);
+            throw new DssException(
+                    "Cannot open DSS file '%s'".formatted(filePath), e);
         }
+    }
+
+    String filePath() {
+        return filePath;
     }
 
     Arena arena() {
