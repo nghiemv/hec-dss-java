@@ -270,8 +270,8 @@ class HecDssWriteTest {
         String pathname = "/grid/EAU GALLA RIVER/SNOW MELT/02FEB2020:0600/03FEB2020:0600/SHG-SNODAS/";
 
         DssGrid grid = HecDss.readGrid(dssFile, pathname);
-        assertEquals(21, grid.info().numberOfCellsX());
-        assertEquals(28, grid.info().numberOfCellsY());
+        assertEquals(21, grid.numberOfCellsX());
+        assertEquals(28, grid.numberOfCellsY());
         assertEquals(21 * 28, grid.data().length);
     }
 
@@ -286,8 +286,8 @@ class HecDssWriteTest {
 
         DssGrid reread = HecDss.readGrid(dssFile, writePath);
         assertArrayEquals(original.data(), reread.data());
-        assertEquals(original.info().numberOfCellsX(), reread.info().numberOfCellsX());
-        assertEquals(original.info().numberOfCellsY(), reread.info().numberOfCellsY());
+        assertEquals(original.numberOfCellsX(), reread.numberOfCellsX());
+        assertEquals(original.numberOfCellsY(), reread.numberOfCellsY());
     }
 
     @Test
@@ -303,18 +303,18 @@ class HecDssWriteTest {
             }
         }
 
-        DssGridInfo info = new DssGridInfo(420, 1, 0, 0, cellsX, cellsY, 0,
-                2000.0f, 0.0f, 0.0f, false, false, "", 0);
-        DssGridSpatialReference srs = new DssGridSpatialReference("WKT", "", 0);
-        DssGridStatistics stats = new DssGridStatistics(0.0f, 2499.0f, 0.0f, 1249.5f,
+        DssGrid input = new DssGrid(data,
+                420, 1, 0, 0, cellsX, cellsY, 0,
+                2000.0f, 0.0f, 0.0f, false, false, "", 0,
+                "WKT", "", 0,
+                0.0f, 2499.0f, 0.0f, 1249.5f,
                 new float[0], new int[0]);
-        DssGrid input = new DssGrid(data, info, srs, stats);
 
         HecDss.writeGrid(dssFile, pathname, input);
 
         DssGrid output = HecDss.readGrid(dssFile, pathname);
-        assertEquals(cellsX, output.info().numberOfCellsX());
-        assertEquals(cellsY, output.info().numberOfCellsY());
+        assertEquals(cellsX, output.numberOfCellsX());
+        assertEquals(cellsY, output.numberOfCellsY());
         assertArrayEquals(data, output.data());
     }
 

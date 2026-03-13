@@ -12,38 +12,35 @@ public final class GridWriter {
 
     public static void write(DssSession session, DssPathname pathname, DssGrid grid) {
         Arena arena = session.arena();
-        DssGridInfo info = grid.info();
-        DssGridSpatialReference srs = grid.srs();
-        DssGridStatistics stats = grid.stats();
 
         MemorySegment pathnameInput = arena.allocateFrom(pathname.toString());
         MemorySegment dataUnitsInput = arena.allocateFrom("");
         MemorySegment dataSourceInput = arena.allocateFrom("");
-        MemorySegment srsNameInput = arena.allocateFrom(srs.name());
-        MemorySegment srsDefinitionInput = arena.allocateFrom(srs.definition());
-        MemorySegment timeZoneIdInput = arena.allocateFrom(info.timeZoneId());
+        MemorySegment srsNameInput = arena.allocateFrom(grid.srsName());
+        MemorySegment srsDefinitionInput = arena.allocateFrom(grid.srsDefinition());
+        MemorySegment timeZoneIdInput = arena.allocateFrom(grid.timeZoneId());
 
-        MemorySegment rangeLimitInput = NativeBuffers.allocateFloats(arena, stats.rangeLimitTable());
-        MemorySegment rangeExceedInput = NativeBuffers.allocateInts(arena, stats.numberEqualOrExceedingRangeLimit());
+        MemorySegment rangeLimitInput = NativeBuffers.allocateFloats(arena, grid.rangeLimitTable());
+        MemorySegment rangeExceedInput = NativeBuffers.allocateInts(arena, grid.numberEqualOrExceedingRangeLimit());
         MemorySegment dataInput = NativeBuffers.allocateFloats(arena, grid.data());
 
         int status = hecdss_h.hec_dss_gridStore(
                 session.dssPointer(), pathnameInput,
-                info.gridType(), info.dataType(),
-                info.lowerLeftCellX(), info.lowerLeftCellY(),
-                info.numberOfCellsX(), info.numberOfCellsY(),
-                info.numberOfRanges(),
-                srs.definitionType(),
-                info.timeZoneRawOffset(),
-                info.isInterval() ? 1 : 0,
-                info.isTimeStamped() ? 1 : 0,
+                grid.gridType(), grid.dataType(),
+                grid.lowerLeftCellX(), grid.lowerLeftCellY(),
+                grid.numberOfCellsX(), grid.numberOfCellsY(),
+                grid.numberOfRanges(),
+                grid.srsDefinitionType(),
+                grid.timeZoneRawOffset(),
+                grid.isInterval() ? 1 : 0,
+                grid.isTimeStamped() ? 1 : 0,
                 0, // compressionSize
                 dataUnitsInput, dataSourceInput,
                 srsNameInput, srsDefinitionInput, timeZoneIdInput,
-                info.cellSize(),
-                info.xCoordOfGridCellZero(), info.yCoordOfGridCellZero(),
-                stats.nullValue(),
-                stats.maxDataValue(), stats.minDataValue(), stats.meanDataValue(),
+                grid.cellSize(),
+                grid.xCoordOfGridCellZero(), grid.yCoordOfGridCellZero(),
+                grid.nullValue(),
+                grid.maxDataValue(), grid.minDataValue(), grid.meanDataValue(),
                 rangeLimitInput, rangeExceedInput,
                 dataInput
         );

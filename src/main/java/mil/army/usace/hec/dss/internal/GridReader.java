@@ -127,36 +127,21 @@ public final class GridReader {
                     .toArray(ValueLayout.JAVA_INT)
                 : new int[0];
 
-        DssGridInfo info = new DssGridInfo(
-                typeOutput.get(C_INT, 0),
-                dataTypeOutput.get(C_INT, 0),
-                lowerLeftCellXOutput.get(C_INT, 0),
-                lowerLeftCellYOutput.get(C_INT, 0),
-                cellsX, cellsY,
-                numRanges,
+        return new DssGrid(data,
+                typeOutput.get(C_INT, 0), dataTypeOutput.get(C_INT, 0),
+                lowerLeftCellXOutput.get(C_INT, 0), lowerLeftCellYOutput.get(C_INT, 0),
+                cellsX, cellsY, numRanges,
                 cellSizeOutput.get(C_FLOAT, 0),
-                xCoordOutput.get(C_FLOAT, 0),
-                yCoordOutput.get(C_FLOAT, 0),
+                xCoordOutput.get(C_FLOAT, 0), yCoordOutput.get(C_FLOAT, 0),
                 isIntervalOutput.get(C_INT, 0) != 0,
                 isTimeStampedOutput.get(C_INT, 0) != 0,
-                timeZoneIDOutput.getString(0),
-                timeZoneRawOffsetOutput.get(C_INT, 0)
-        );
-
-        DssGridSpatialReference srs = new DssGridSpatialReference(
-                srsNameOutput.getString(0),
-                srsDefinitionOutput.getString(0),
-                srsDefinitionTypeOutput.get(C_INT, 0)
-        );
-
-        DssGridStatistics stats = new DssGridStatistics(
+                timeZoneIDOutput.getString(0), timeZoneRawOffsetOutput.get(C_INT, 0),
+                srsNameOutput.getString(0), srsDefinitionOutput.getString(0),
+                srsDefinitionTypeOutput.get(C_INT, 0),
                 nullValueOutput.get(C_FLOAT, 0),
-                maxDataValueOutput.get(C_FLOAT, 0),
-                minDataValueOutput.get(C_FLOAT, 0),
+                maxDataValueOutput.get(C_FLOAT, 0), minDataValueOutput.get(C_FLOAT, 0),
                 meanDataValueOutput.get(C_FLOAT, 0),
                 rangeTable, rangeExceedance
         );
-
-        return new DssGrid(data, info, srs, stats);
     }
 }
