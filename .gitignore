@@ -41,3 +41,6 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+
+### Downloaded by Gradle downloadHeader task ###
+src/main/native/hecdss.h
