@@ -21,6 +21,7 @@ final class DssTimeSeriesService {
     private static final Logger logger = Logger.getLogger(DssTimeSeriesService.class.getName());
     private static final int UNITS_BUFFER_LENGTH = 100;
     private static final int DATA_TYPE_BUFFER_LENGTH = 100;
+    private static final int TIMEZONE_BUFFER_LENGTH = 100;
 
     private final DssSession dssSession;
 
@@ -43,6 +44,7 @@ final class DssTimeSeriesService {
         int qualityWidth = numberValuesAndQualityWidth[1];
         int unitsBufferLength = UNITS_BUFFER_LENGTH;
         int dataTypeBufferLength = DATA_TYPE_BUFFER_LENGTH;
+        int timeZoneBufferLength = TIMEZONE_BUFFER_LENGTH;
 
         MemorySegment dssPointerInput = dssSession.getDssStackPointer();
         MemorySegment dssPathnameInput = memoryAllocator.allocateString(pathname.toString());
@@ -59,6 +61,7 @@ final class DssTimeSeriesService {
         MemorySegment timeGranularitySecondsOutput = memoryAllocator.allocateInts(numberValues);
         MemorySegment dataUnitsOutput = memoryAllocator.allocateChars(unitsBufferLength);
         MemorySegment dataTypeOutput = memoryAllocator.allocateChars(dataTypeBufferLength);
+        MemorySegment timeZoneNameOutput = memoryAllocator.allocateChars(timeZoneBufferLength);
 
         int status = hecdss_h.hec_dss_tsRetrieve(
                 dssPointerInput,
@@ -78,7 +81,9 @@ final class DssTimeSeriesService {
                 dataUnitsOutput,
                 unitsBufferLength,
                 dataTypeOutput,
-                dataTypeBufferLength
+                dataTypeBufferLength,
+                timeZoneNameOutput,
+                timeZoneBufferLength
         );
 
         if (status == 0) {

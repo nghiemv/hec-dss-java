@@ -2,71 +2,426 @@
 
 package mil.army.usace.hec.dss.internal;
 
+import java.lang.invoke.*;
 import java.lang.foreign.*;
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
-import java.util.Arrays;
-import java.util.stream.Collectors;
+import java.nio.ByteOrder;
+import java.util.*;
+import java.util.function.*;
+import java.util.stream.*;
 
-import static java.lang.foreign.ValueLayout.JAVA_BYTE;
+import static java.lang.foreign.ValueLayout.*;
+import static java.lang.foreign.MemoryLayout.PathElement.*;
 
-class hecdss_h {
+public class hecdss_h extends hecdss_h$shared {
 
-    private hecdss_h() {
+    hecdss_h() {
         // Should not be called directly
     }
 
     static final Arena LIBRARY_ARENA = Arena.ofAuto();
-    static final boolean TRACE_DOWNCALLS = Boolean.getBoolean("jextract.trace.downcalls");
 
-    static void traceDowncall(String name, Object... args) {
-         String traceArgs = Arrays.stream(args)
-                       .map(Object::toString)
-                       .collect(Collectors.joining(", "));
-         System.out.printf("%s(%s)\n", name, traceArgs);
+    static final SymbolLookup SYMBOL_LOOKUP = SymbolLookup.loaderLookup()
+            .or(Linker.nativeLinker().defaultLookup());
+
+
+    private static class hec_dss_log_message {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            hecdss_h.C_INT,
+            hecdss_h.C_POINTER
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("hec_dss_log_message");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
     }
 
-    static MemorySegment findOrThrow(String symbol) {
-        return SYMBOL_LOOKUP.find(symbol)
-            .orElseThrow(() -> new UnsatisfiedLinkError("unresolved symbol: " + symbol));
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int hec_dss_log_message(const char *message)
+     * }
+     */
+    public static FunctionDescriptor hec_dss_log_message$descriptor() {
+        return hec_dss_log_message.DESC;
     }
 
-    static MethodHandle upcallHandle(Class<?> fi, String name, FunctionDescriptor fdesc) {
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int hec_dss_log_message(const char *message)
+     * }
+     */
+    public static MethodHandle hec_dss_log_message$handle() {
+        return hec_dss_log_message.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int hec_dss_log_message(const char *message)
+     * }
+     */
+    public static MemorySegment hec_dss_log_message$address() {
+        return hec_dss_log_message.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int hec_dss_log_message(const char *message)
+     * }
+     */
+    public static int hec_dss_log_message(MemorySegment message) {
+        var mh$ = hec_dss_log_message.HANDLE;
         try {
-            return MethodHandles.lookup().findVirtual(fi, name, fdesc.toMethodType());
-        } catch (ReflectiveOperationException ex) {
-            throw new AssertionError(ex);
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("hec_dss_log_message", message);
+            }
+            return (int)mh$.invokeExact(message);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
         }
     }
 
-    static MemoryLayout align(MemoryLayout layout, long align) {
-        return switch (layout) {
-            case PaddingLayout p -> p;
-            case ValueLayout v -> v.withByteAlignment(align);
-            case GroupLayout g -> {
-                MemoryLayout[] alignedMembers = g.memberLayouts().stream()
-                        .map(m -> align(m, align)).toArray(MemoryLayout[]::new);
-                yield g instanceof StructLayout ?
-                        MemoryLayout.structLayout(alignedMembers) : MemoryLayout.unionLayout(alignedMembers);
-            }
-            case SequenceLayout s -> MemoryLayout.sequenceLayout(s.elementCount(), align(s.elementLayout(), align));
-        };
+    private static class hec_dss_open_log_file {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            hecdss_h.C_INT,
+            hecdss_h.C_POINTER
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("hec_dss_open_log_file");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
     }
 
-    static final SymbolLookup SYMBOL_LOOKUP = SymbolLookup.libraryLookup(System.mapLibraryName("hecdss"), LIBRARY_ARENA)
-            .or(SymbolLookup.loaderLookup())
-            .or(Linker.nativeLinker().defaultLookup());
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int hec_dss_open_log_file(const char *filename)
+     * }
+     */
+    public static FunctionDescriptor hec_dss_open_log_file$descriptor() {
+        return hec_dss_open_log_file.DESC;
+    }
 
-    public static final ValueLayout.OfBoolean C_BOOL = ValueLayout.JAVA_BOOLEAN;
-    public static final ValueLayout.OfByte C_CHAR = ValueLayout.JAVA_BYTE;
-    public static final ValueLayout.OfShort C_SHORT = ValueLayout.JAVA_SHORT;
-    public static final ValueLayout.OfInt C_INT = ValueLayout.JAVA_INT;
-    public static final ValueLayout.OfLong C_LONG_LONG = ValueLayout.JAVA_LONG;
-    public static final ValueLayout.OfFloat C_FLOAT = ValueLayout.JAVA_FLOAT;
-    public static final ValueLayout.OfDouble C_DOUBLE = ValueLayout.JAVA_DOUBLE;
-    public static final AddressLayout C_POINTER = ValueLayout.ADDRESS
-            .withTargetLayout(MemoryLayout.sequenceLayout(Long.MAX_VALUE, JAVA_BYTE));
-    public static final ValueLayout.OfLong C_LONG = ValueLayout.JAVA_LONG;
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int hec_dss_open_log_file(const char *filename)
+     * }
+     */
+    public static MethodHandle hec_dss_open_log_file$handle() {
+        return hec_dss_open_log_file.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int hec_dss_open_log_file(const char *filename)
+     * }
+     */
+    public static MemorySegment hec_dss_open_log_file$address() {
+        return hec_dss_open_log_file.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int hec_dss_open_log_file(const char *filename)
+     * }
+     */
+    public static int hec_dss_open_log_file(MemorySegment filename) {
+        var mh$ = hec_dss_open_log_file.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("hec_dss_open_log_file", filename);
+            }
+            return (int)mh$.invokeExact(filename);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * void hec_dss_close_log_file()
+     * }
+     */
+    public static class hec_dss_close_log_file {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.ofVoid(        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("hec_dss_close_log_file");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private hec_dss_close_log_file(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * void hec_dss_close_log_file()
+         * }
+         */
+        public static hec_dss_close_log_file makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new hec_dss_close_log_file(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public void apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("hec_dss_close_log_file", x0);
+                }
+                 spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * int hec_dss_flush_log_file()
+     * }
+     */
+    public static class hec_dss_flush_log_file {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                hecdss_h.C_INT        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("hec_dss_flush_log_file");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private hec_dss_flush_log_file(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * int hec_dss_flush_log_file()
+         * }
+         */
+        public static hec_dss_flush_log_file makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new hec_dss_flush_log_file(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public int apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("hec_dss_flush_log_file", x0);
+                }
+                return (int) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * const char *hec_dss_api_version()
+     * }
+     */
+    public static class hec_dss_api_version {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                hecdss_h.C_POINTER        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("hec_dss_api_version");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private hec_dss_api_version(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * const char *hec_dss_api_version()
+         * }
+         */
+        public static hec_dss_api_version makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new hec_dss_api_version(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public MemorySegment apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("hec_dss_api_version", x0);
+                }
+                return (MemorySegment) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
+
+    /**
+     * Variadic invoker class for:
+     * {@snippet lang=c :
+     * int hec_dss_CONSTANT_MAX_PATH_SIZE()
+     * }
+     */
+    public static class hec_dss_CONSTANT_MAX_PATH_SIZE {
+        private static final FunctionDescriptor BASE_DESC = FunctionDescriptor.of(
+                hecdss_h.C_INT        );
+        private static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("hec_dss_CONSTANT_MAX_PATH_SIZE");
+
+        private final MethodHandle handle;
+        private final FunctionDescriptor descriptor;
+        private final MethodHandle spreader;
+
+        private hec_dss_CONSTANT_MAX_PATH_SIZE(MethodHandle handle, FunctionDescriptor descriptor, MethodHandle spreader) {
+            this.handle = handle;
+            this.descriptor = descriptor;
+            this.spreader = spreader;
+        }
+
+        /**
+         * Variadic invoker factory for:
+         * {@snippet lang=c :
+         * int hec_dss_CONSTANT_MAX_PATH_SIZE()
+         * }
+         */
+        public static hec_dss_CONSTANT_MAX_PATH_SIZE makeInvoker(MemoryLayout... layouts) {
+            FunctionDescriptor desc$ = BASE_DESC.appendArgumentLayouts(layouts);
+            Linker.Option fva$ = Linker.Option.firstVariadicArg(BASE_DESC.argumentLayouts().size());
+            var mh$ = Linker.nativeLinker().downcallHandle(ADDR, desc$, fva$);
+            var spreader$ = mh$.asSpreader(Object[].class, layouts.length);
+            return new hec_dss_CONSTANT_MAX_PATH_SIZE(mh$, desc$, spreader$);
+        }
+
+        /**
+         * {@return the address}
+         */
+        public static MemorySegment address() {
+            return ADDR;
+        }
+
+        /**
+         * {@return the specialized method handle}
+         */
+        public MethodHandle handle() {
+            return handle;
+        }
+
+        /**
+         * {@return the specialized descriptor}
+         */
+        public FunctionDescriptor descriptor() {
+            return descriptor;
+        }
+
+        public int apply(Object... x0) {
+            try {
+                if (TRACE_DOWNCALLS) {
+                    traceDowncall("hec_dss_CONSTANT_MAX_PATH_SIZE", x0);
+                }
+                return (int) spreader.invokeExact(x0);
+            } catch(IllegalArgumentException | ClassCastException ex$)  {
+                throw ex$; // rethrow IAE from passing wrong number/type of args
+            } catch (Throwable ex$) {
+               throw new AssertionError("should not reach here", ex$);
+            }
+        }
+    }
 
     private static class hec_dss_open {
         public static final FunctionDescriptor DESC = FunctionDescriptor.of(
@@ -75,7 +430,7 @@ class hecdss_h {
             hecdss_h.C_POINTER
         );
 
-        public static final MemorySegment ADDR = hecdss_h.findOrThrow("hec_dss_open");
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("hec_dss_open");
 
         public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
     }
@@ -122,6 +477,8 @@ class hecdss_h {
                 traceDowncall("hec_dss_open", filename, dss);
             }
             return (int)mh$.invokeExact(filename, dss);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -133,7 +490,7 @@ class hecdss_h {
             hecdss_h.C_POINTER
         );
 
-        public static final MemorySegment ADDR = hecdss_h.findOrThrow("hec_dss_close");
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("hec_dss_close");
 
         public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
     }
@@ -180,6 +537,8 @@ class hecdss_h {
                 traceDowncall("hec_dss_close", dss);
             }
             return (int)mh$.invokeExact(dss);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -191,7 +550,7 @@ class hecdss_h {
             hecdss_h.C_POINTER
         );
 
-        public static final MemorySegment ADDR = hecdss_h.findOrThrow("hec_dss_getVersion");
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("hec_dss_getVersion");
 
         public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
     }
@@ -238,6 +597,8 @@ class hecdss_h {
                 traceDowncall("hec_dss_getVersion", dss);
             }
             return (int)mh$.invokeExact(dss);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -249,7 +610,7 @@ class hecdss_h {
             hecdss_h.C_POINTER
         );
 
-        public static final MemorySegment ADDR = hecdss_h.findOrThrow("hec_dss_getFileVersion");
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("hec_dss_getFileVersion");
 
         public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
     }
@@ -296,6 +657,8 @@ class hecdss_h {
                 traceDowncall("hec_dss_getFileVersion", filename);
             }
             return (int)mh$.invokeExact(filename);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -308,7 +671,7 @@ class hecdss_h {
             hecdss_h.C_INT
         );
 
-        public static final MemorySegment ADDR = hecdss_h.findOrThrow("hec_dss_set_value");
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("hec_dss_set_value");
 
         public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
     }
@@ -355,6 +718,8 @@ class hecdss_h {
                 traceDowncall("hec_dss_set_value", name, value);
             }
             return (int)mh$.invokeExact(name, value);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -367,7 +732,7 @@ class hecdss_h {
             hecdss_h.C_POINTER
         );
 
-        public static final MemorySegment ADDR = hecdss_h.findOrThrow("hec_dss_set_string");
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("hec_dss_set_string");
 
         public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
     }
@@ -414,69 +779,8 @@ class hecdss_h {
                 traceDowncall("hec_dss_set_string", name, value);
             }
             return (int)mh$.invokeExact(name, value);
-        } catch (Throwable ex$) {
-           throw new AssertionError("should not reach here", ex$);
-        }
-    }
-
-    private static class hec_dss_catalog {
-        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
-            hecdss_h.C_INT,
-            hecdss_h.C_POINTER,
-            hecdss_h.C_POINTER,
-            hecdss_h.C_POINTER,
-            hecdss_h.C_POINTER,
-            hecdss_h.C_INT,
-            hecdss_h.C_INT
-        );
-
-        public static final MemorySegment ADDR = hecdss_h.findOrThrow("hec_dss_catalog");
-
-        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
-    }
-
-    /**
-     * Function descriptor for:
-     * {@snippet lang=c :
-     * int hec_dss_catalog(dss_file *dss, char *pathBuffer, int *recordTypes, const char *pathFilter, const int count, const int pathBufferItemSize)
-     * }
-     */
-    public static FunctionDescriptor hec_dss_catalog$descriptor() {
-        return hec_dss_catalog.DESC;
-    }
-
-    /**
-     * Downcall method handle for:
-     * {@snippet lang=c :
-     * int hec_dss_catalog(dss_file *dss, char *pathBuffer, int *recordTypes, const char *pathFilter, const int count, const int pathBufferItemSize)
-     * }
-     */
-    public static MethodHandle hec_dss_catalog$handle() {
-        return hec_dss_catalog.HANDLE;
-    }
-
-    /**
-     * Address for:
-     * {@snippet lang=c :
-     * int hec_dss_catalog(dss_file *dss, char *pathBuffer, int *recordTypes, const char *pathFilter, const int count, const int pathBufferItemSize)
-     * }
-     */
-    public static MemorySegment hec_dss_catalog$address() {
-        return hec_dss_catalog.ADDR;
-    }
-
-    /**
-     * {@snippet lang=c :
-     * int hec_dss_catalog(dss_file *dss, char *pathBuffer, int *recordTypes, const char *pathFilter, const int count, const int pathBufferItemSize)
-     * }
-     */
-    public static int hec_dss_catalog(MemorySegment dss, MemorySegment pathBuffer, MemorySegment recordTypes, MemorySegment pathFilter, int count, int pathBufferItemSize) {
-        var mh$ = hec_dss_catalog.HANDLE;
-        try {
-            if (TRACE_DOWNCALLS) {
-                traceDowncall("hec_dss_catalog", dss, pathBuffer, recordTypes, pathFilter, count, pathBufferItemSize);
-            }
-            return (int)mh$.invokeExact(dss, pathBuffer, recordTypes, pathFilter, count, pathBufferItemSize);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -494,7 +798,7 @@ class hecdss_h {
             hecdss_h.C_POINTER
         );
 
-        public static final MemorySegment ADDR = hecdss_h.findOrThrow("hec_dss_tsGetDateTimeRange");
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("hec_dss_tsGetDateTimeRange");
 
         public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
     }
@@ -541,6 +845,72 @@ class hecdss_h {
                 traceDowncall("hec_dss_tsGetDateTimeRange", dss, pathname, boolFullSet, firstValidJulian, firstSeconds, lastValidJulian, lastSeconds);
             }
             return (int)mh$.invokeExact(dss, pathname, boolFullSet, firstValidJulian, firstSeconds, lastValidJulian, lastSeconds);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class hec_dss_numberPeriods {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            hecdss_h.C_INT,
+            hecdss_h.C_INT,
+            hecdss_h.C_INT,
+            hecdss_h.C_INT,
+            hecdss_h.C_INT,
+            hecdss_h.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("hec_dss_numberPeriods");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int hec_dss_numberPeriods(const int intervalSeconds, const int julianStart, const int startSeconds, const int julianEnd, const int endSeconds)
+     * }
+     */
+    public static FunctionDescriptor hec_dss_numberPeriods$descriptor() {
+        return hec_dss_numberPeriods.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int hec_dss_numberPeriods(const int intervalSeconds, const int julianStart, const int startSeconds, const int julianEnd, const int endSeconds)
+     * }
+     */
+    public static MethodHandle hec_dss_numberPeriods$handle() {
+        return hec_dss_numberPeriods.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int hec_dss_numberPeriods(const int intervalSeconds, const int julianStart, const int startSeconds, const int julianEnd, const int endSeconds)
+     * }
+     */
+    public static MemorySegment hec_dss_numberPeriods$address() {
+        return hec_dss_numberPeriods.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int hec_dss_numberPeriods(const int intervalSeconds, const int julianStart, const int startSeconds, const int julianEnd, const int endSeconds)
+     * }
+     */
+    public static int hec_dss_numberPeriods(int intervalSeconds, int julianStart, int startSeconds, int julianEnd, int endSeconds) {
+        var mh$ = hec_dss_numberPeriods.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("hec_dss_numberPeriods", intervalSeconds, julianStart, startSeconds, julianEnd, endSeconds);
+            }
+            return (int)mh$.invokeExact(intervalSeconds, julianStart, startSeconds, julianEnd, endSeconds);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -559,7 +929,7 @@ class hecdss_h {
             hecdss_h.C_POINTER
         );
 
-        public static final MemorySegment ADDR = hecdss_h.findOrThrow("hec_dss_tsGetSizes");
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("hec_dss_tsGetSizes");
 
         public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
     }
@@ -606,6 +976,8 @@ class hecdss_h {
                 traceDowncall("hec_dss_tsGetSizes", dss, pathname, startDate, startTime, endDate, endTime, numberValues, qualityElementSize);
             }
             return (int)mh$.invokeExact(dss, pathname, startDate, startTime, endDate, endTime, numberValues, qualityElementSize);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -622,7 +994,7 @@ class hecdss_h {
             hecdss_h.C_INT
         );
 
-        public static final MemorySegment ADDR = hecdss_h.findOrThrow("hec_dss_tsRetrieveInfo");
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("hec_dss_tsRetrieveInfo");
 
         public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
     }
@@ -669,6 +1041,8 @@ class hecdss_h {
                 traceDowncall("hec_dss_tsRetrieveInfo", dss, pathname, units, unitsLength, type, typeLength);
             }
             return (int)mh$.invokeExact(dss, pathname, units, unitsLength, type, typeLength);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -680,7 +1054,7 @@ class hecdss_h {
             hecdss_h.C_POINTER
         );
 
-        public static final MemorySegment ADDR = hecdss_h.findOrThrow("hec_dss_record_count");
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("hec_dss_record_count");
 
         public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
     }
@@ -727,6 +1101,73 @@ class hecdss_h {
                 traceDowncall("hec_dss_record_count", dss);
             }
             return (int)mh$.invokeExact(dss);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class hec_dss_catalog {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            hecdss_h.C_INT,
+            hecdss_h.C_POINTER,
+            hecdss_h.C_POINTER,
+            hecdss_h.C_POINTER,
+            hecdss_h.C_POINTER,
+            hecdss_h.C_INT,
+            hecdss_h.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("hec_dss_catalog");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int hec_dss_catalog(dss_file *dss, char *pathBuffer, int *recordTypes, const char *pathFilter, const int count, const int pathBufferItemSize)
+     * }
+     */
+    public static FunctionDescriptor hec_dss_catalog$descriptor() {
+        return hec_dss_catalog.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int hec_dss_catalog(dss_file *dss, char *pathBuffer, int *recordTypes, const char *pathFilter, const int count, const int pathBufferItemSize)
+     * }
+     */
+    public static MethodHandle hec_dss_catalog$handle() {
+        return hec_dss_catalog.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int hec_dss_catalog(dss_file *dss, char *pathBuffer, int *recordTypes, const char *pathFilter, const int count, const int pathBufferItemSize)
+     * }
+     */
+    public static MemorySegment hec_dss_catalog$address() {
+        return hec_dss_catalog.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int hec_dss_catalog(dss_file *dss, char *pathBuffer, int *recordTypes, const char *pathFilter, const int count, const int pathBufferItemSize)
+     * }
+     */
+    public static int hec_dss_catalog(MemorySegment dss, MemorySegment pathBuffer, MemorySegment recordTypes, MemorySegment pathFilter, int count, int pathBufferItemSize) {
+        var mh$ = hec_dss_catalog.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("hec_dss_catalog", dss, pathBuffer, recordTypes, pathFilter, count, pathBufferItemSize);
+            }
+            return (int)mh$.invokeExact(dss, pathBuffer, recordTypes, pathFilter, count, pathBufferItemSize);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -739,7 +1180,7 @@ class hecdss_h {
             hecdss_h.C_POINTER
         );
 
-        public static final MemorySegment ADDR = hecdss_h.findOrThrow("hec_dss_dataType");
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("hec_dss_dataType");
 
         public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
     }
@@ -786,6 +1227,8 @@ class hecdss_h {
                 traceDowncall("hec_dss_dataType", dss, pathname);
             }
             return (int)mh$.invokeExact(dss, pathname);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -811,10 +1254,12 @@ class hecdss_h {
             hecdss_h.C_POINTER,
             hecdss_h.C_INT,
             hecdss_h.C_POINTER,
+            hecdss_h.C_INT,
+            hecdss_h.C_POINTER,
             hecdss_h.C_INT
         );
 
-        public static final MemorySegment ADDR = hecdss_h.findOrThrow("hec_dss_tsRetrieve");
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("hec_dss_tsRetrieve");
 
         public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
     }
@@ -822,7 +1267,7 @@ class hecdss_h {
     /**
      * Function descriptor for:
      * {@snippet lang=c :
-     * int hec_dss_tsRetrieve(dss_file *dss, const char *pathname, const char *startDate, const char *startTime, const char *endDate, const char *endTime, int *timeArray, double *valueArray, const int arraySize, int *numberValuesRead, int *quality, const int qualityWidth, int *julianBaseDate, int *timeGranularitySeconds, char *units, const int unitsLength, char *type, const int typeLength)
+     * int hec_dss_tsRetrieve(dss_file *dss, const char *pathname, const char *startDate, const char *startTime, const char *endDate, const char *endTime, int *timeArray, double *valueArray, const int arraySize, int *numberValuesRead, int *quality, const int qualityWidth, int *julianBaseDate, int *timeGranularitySeconds, char *units, const int unitsLength, char *type, const int typeLength, char *timeZoneName, const int timeZoneNameLength)
      * }
      */
     public static FunctionDescriptor hec_dss_tsRetrieve$descriptor() {
@@ -832,7 +1277,7 @@ class hecdss_h {
     /**
      * Downcall method handle for:
      * {@snippet lang=c :
-     * int hec_dss_tsRetrieve(dss_file *dss, const char *pathname, const char *startDate, const char *startTime, const char *endDate, const char *endTime, int *timeArray, double *valueArray, const int arraySize, int *numberValuesRead, int *quality, const int qualityWidth, int *julianBaseDate, int *timeGranularitySeconds, char *units, const int unitsLength, char *type, const int typeLength)
+     * int hec_dss_tsRetrieve(dss_file *dss, const char *pathname, const char *startDate, const char *startTime, const char *endDate, const char *endTime, int *timeArray, double *valueArray, const int arraySize, int *numberValuesRead, int *quality, const int qualityWidth, int *julianBaseDate, int *timeGranularitySeconds, char *units, const int unitsLength, char *type, const int typeLength, char *timeZoneName, const int timeZoneNameLength)
      * }
      */
     public static MethodHandle hec_dss_tsRetrieve$handle() {
@@ -842,7 +1287,7 @@ class hecdss_h {
     /**
      * Address for:
      * {@snippet lang=c :
-     * int hec_dss_tsRetrieve(dss_file *dss, const char *pathname, const char *startDate, const char *startTime, const char *endDate, const char *endTime, int *timeArray, double *valueArray, const int arraySize, int *numberValuesRead, int *quality, const int qualityWidth, int *julianBaseDate, int *timeGranularitySeconds, char *units, const int unitsLength, char *type, const int typeLength)
+     * int hec_dss_tsRetrieve(dss_file *dss, const char *pathname, const char *startDate, const char *startTime, const char *endDate, const char *endTime, int *timeArray, double *valueArray, const int arraySize, int *numberValuesRead, int *quality, const int qualityWidth, int *julianBaseDate, int *timeGranularitySeconds, char *units, const int unitsLength, char *type, const int typeLength, char *timeZoneName, const int timeZoneNameLength)
      * }
      */
     public static MemorySegment hec_dss_tsRetrieve$address() {
@@ -851,16 +1296,18 @@ class hecdss_h {
 
     /**
      * {@snippet lang=c :
-     * int hec_dss_tsRetrieve(dss_file *dss, const char *pathname, const char *startDate, const char *startTime, const char *endDate, const char *endTime, int *timeArray, double *valueArray, const int arraySize, int *numberValuesRead, int *quality, const int qualityWidth, int *julianBaseDate, int *timeGranularitySeconds, char *units, const int unitsLength, char *type, const int typeLength)
+     * int hec_dss_tsRetrieve(dss_file *dss, const char *pathname, const char *startDate, const char *startTime, const char *endDate, const char *endTime, int *timeArray, double *valueArray, const int arraySize, int *numberValuesRead, int *quality, const int qualityWidth, int *julianBaseDate, int *timeGranularitySeconds, char *units, const int unitsLength, char *type, const int typeLength, char *timeZoneName, const int timeZoneNameLength)
      * }
      */
-    public static int hec_dss_tsRetrieve(MemorySegment dss, MemorySegment pathname, MemorySegment startDate, MemorySegment startTime, MemorySegment endDate, MemorySegment endTime, MemorySegment timeArray, MemorySegment valueArray, int arraySize, MemorySegment numberValuesRead, MemorySegment quality, int qualityWidth, MemorySegment julianBaseDate, MemorySegment timeGranularitySeconds, MemorySegment units, int unitsLength, MemorySegment type, int typeLength) {
+    public static int hec_dss_tsRetrieve(MemorySegment dss, MemorySegment pathname, MemorySegment startDate, MemorySegment startTime, MemorySegment endDate, MemorySegment endTime, MemorySegment timeArray, MemorySegment valueArray, int arraySize, MemorySegment numberValuesRead, MemorySegment quality, int qualityWidth, MemorySegment julianBaseDate, MemorySegment timeGranularitySeconds, MemorySegment units, int unitsLength, MemorySegment type, int typeLength, MemorySegment timeZoneName, int timeZoneNameLength) {
         var mh$ = hec_dss_tsRetrieve.HANDLE;
         try {
             if (TRACE_DOWNCALLS) {
-                traceDowncall("hec_dss_tsRetrieve", dss, pathname, startDate, startTime, endDate, endTime, timeArray, valueArray, arraySize, numberValuesRead, quality, qualityWidth, julianBaseDate, timeGranularitySeconds, units, unitsLength, type, typeLength);
+                traceDowncall("hec_dss_tsRetrieve", dss, pathname, startDate, startTime, endDate, endTime, timeArray, valueArray, arraySize, numberValuesRead, quality, qualityWidth, julianBaseDate, timeGranularitySeconds, units, unitsLength, type, typeLength, timeZoneName, timeZoneNameLength);
             }
-            return (int)mh$.invokeExact(dss, pathname, startDate, startTime, endDate, endTime, timeArray, valueArray, arraySize, numberValuesRead, quality, qualityWidth, julianBaseDate, timeGranularitySeconds, units, unitsLength, type, typeLength);
+            return (int)mh$.invokeExact(dss, pathname, startDate, startTime, endDate, endTime, timeArray, valueArray, arraySize, numberValuesRead, quality, qualityWidth, julianBaseDate, timeGranularitySeconds, units, unitsLength, type, typeLength, timeZoneName, timeZoneNameLength);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -879,10 +1326,12 @@ class hecdss_h {
             hecdss_h.C_INT,
             hecdss_h.C_INT,
             hecdss_h.C_POINTER,
-            hecdss_h.C_POINTER
+            hecdss_h.C_POINTER,
+            hecdss_h.C_POINTER,
+            hecdss_h.C_INT
         );
 
-        public static final MemorySegment ADDR = hecdss_h.findOrThrow("hec_dss_tsStoreRegular");
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("hec_dss_tsStoreRegular");
 
         public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
     }
@@ -890,7 +1339,7 @@ class hecdss_h {
     /**
      * Function descriptor for:
      * {@snippet lang=c :
-     * int hec_dss_tsStoreRegular(dss_file *dss, const char *pathname, const char *startDate, const char *startTime, double *valueArray, const int valueArraySize, int *qualityArray, const int qualityArraySize, const int saveAsFloat, const char *units, const char *type)
+     * int hec_dss_tsStoreRegular(dss_file *dss, const char *pathname, const char *startDate, const char *startTime, double *valueArray, const int valueArraySize, int *qualityArray, const int qualityArraySize, const int saveAsFloat, const char *units, const char *type, const char *timeZoneName, int storageFlag)
      * }
      */
     public static FunctionDescriptor hec_dss_tsStoreRegular$descriptor() {
@@ -900,7 +1349,7 @@ class hecdss_h {
     /**
      * Downcall method handle for:
      * {@snippet lang=c :
-     * int hec_dss_tsStoreRegular(dss_file *dss, const char *pathname, const char *startDate, const char *startTime, double *valueArray, const int valueArraySize, int *qualityArray, const int qualityArraySize, const int saveAsFloat, const char *units, const char *type)
+     * int hec_dss_tsStoreRegular(dss_file *dss, const char *pathname, const char *startDate, const char *startTime, double *valueArray, const int valueArraySize, int *qualityArray, const int qualityArraySize, const int saveAsFloat, const char *units, const char *type, const char *timeZoneName, int storageFlag)
      * }
      */
     public static MethodHandle hec_dss_tsStoreRegular$handle() {
@@ -910,7 +1359,7 @@ class hecdss_h {
     /**
      * Address for:
      * {@snippet lang=c :
-     * int hec_dss_tsStoreRegular(dss_file *dss, const char *pathname, const char *startDate, const char *startTime, double *valueArray, const int valueArraySize, int *qualityArray, const int qualityArraySize, const int saveAsFloat, const char *units, const char *type)
+     * int hec_dss_tsStoreRegular(dss_file *dss, const char *pathname, const char *startDate, const char *startTime, double *valueArray, const int valueArraySize, int *qualityArray, const int qualityArraySize, const int saveAsFloat, const char *units, const char *type, const char *timeZoneName, int storageFlag)
      * }
      */
     public static MemorySegment hec_dss_tsStoreRegular$address() {
@@ -919,16 +1368,18 @@ class hecdss_h {
 
     /**
      * {@snippet lang=c :
-     * int hec_dss_tsStoreRegular(dss_file *dss, const char *pathname, const char *startDate, const char *startTime, double *valueArray, const int valueArraySize, int *qualityArray, const int qualityArraySize, const int saveAsFloat, const char *units, const char *type)
+     * int hec_dss_tsStoreRegular(dss_file *dss, const char *pathname, const char *startDate, const char *startTime, double *valueArray, const int valueArraySize, int *qualityArray, const int qualityArraySize, const int saveAsFloat, const char *units, const char *type, const char *timeZoneName, int storageFlag)
      * }
      */
-    public static int hec_dss_tsStoreRegular(MemorySegment dss, MemorySegment pathname, MemorySegment startDate, MemorySegment startTime, MemorySegment valueArray, int valueArraySize, MemorySegment qualityArray, int qualityArraySize, int saveAsFloat, MemorySegment units, MemorySegment type) {
+    public static int hec_dss_tsStoreRegular(MemorySegment dss, MemorySegment pathname, MemorySegment startDate, MemorySegment startTime, MemorySegment valueArray, int valueArraySize, MemorySegment qualityArray, int qualityArraySize, int saveAsFloat, MemorySegment units, MemorySegment type, MemorySegment timeZoneName, int storageFlag) {
         var mh$ = hec_dss_tsStoreRegular.HANDLE;
         try {
             if (TRACE_DOWNCALLS) {
-                traceDowncall("hec_dss_tsStoreRegular", dss, pathname, startDate, startTime, valueArray, valueArraySize, qualityArray, qualityArraySize, saveAsFloat, units, type);
+                traceDowncall("hec_dss_tsStoreRegular", dss, pathname, startDate, startTime, valueArray, valueArraySize, qualityArray, qualityArraySize, saveAsFloat, units, type, timeZoneName, storageFlag);
             }
-            return (int)mh$.invokeExact(dss, pathname, startDate, startTime, valueArray, valueArraySize, qualityArray, qualityArraySize, saveAsFloat, units, type);
+            return (int)mh$.invokeExact(dss, pathname, startDate, startTime, valueArray, valueArraySize, qualityArray, qualityArraySize, saveAsFloat, units, type, timeZoneName, storageFlag);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -948,10 +1399,12 @@ class hecdss_h {
             hecdss_h.C_INT,
             hecdss_h.C_INT,
             hecdss_h.C_POINTER,
-            hecdss_h.C_POINTER
+            hecdss_h.C_POINTER,
+            hecdss_h.C_POINTER,
+            hecdss_h.C_INT
         );
 
-        public static final MemorySegment ADDR = hecdss_h.findOrThrow("hec_dss_tsStoreIregular");
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("hec_dss_tsStoreIregular");
 
         public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
     }
@@ -959,7 +1412,7 @@ class hecdss_h {
     /**
      * Function descriptor for:
      * {@snippet lang=c :
-     * int hec_dss_tsStoreIregular(dss_file *dss, const char *pathname, const char *startDateBase, int *times, const int timeGranularitySeconds, double *valueArray, const int valueArraySize, int *qualityArray, const int qualityArraySize, const int saveAsFloat, const char *units, const char *type)
+     * int hec_dss_tsStoreIregular(dss_file *dss, const char *pathname, const char *startDateBase, int *times, const int timeGranularitySeconds, double *valueArray, const int valueArraySize, int *qualityArray, const int qualityArraySize, const int saveAsFloat, const char *units, const char *type, const char *timeZoneName, int storageFlag)
      * }
      */
     public static FunctionDescriptor hec_dss_tsStoreIregular$descriptor() {
@@ -969,7 +1422,7 @@ class hecdss_h {
     /**
      * Downcall method handle for:
      * {@snippet lang=c :
-     * int hec_dss_tsStoreIregular(dss_file *dss, const char *pathname, const char *startDateBase, int *times, const int timeGranularitySeconds, double *valueArray, const int valueArraySize, int *qualityArray, const int qualityArraySize, const int saveAsFloat, const char *units, const char *type)
+     * int hec_dss_tsStoreIregular(dss_file *dss, const char *pathname, const char *startDateBase, int *times, const int timeGranularitySeconds, double *valueArray, const int valueArraySize, int *qualityArray, const int qualityArraySize, const int saveAsFloat, const char *units, const char *type, const char *timeZoneName, int storageFlag)
      * }
      */
     public static MethodHandle hec_dss_tsStoreIregular$handle() {
@@ -979,7 +1432,7 @@ class hecdss_h {
     /**
      * Address for:
      * {@snippet lang=c :
-     * int hec_dss_tsStoreIregular(dss_file *dss, const char *pathname, const char *startDateBase, int *times, const int timeGranularitySeconds, double *valueArray, const int valueArraySize, int *qualityArray, const int qualityArraySize, const int saveAsFloat, const char *units, const char *type)
+     * int hec_dss_tsStoreIregular(dss_file *dss, const char *pathname, const char *startDateBase, int *times, const int timeGranularitySeconds, double *valueArray, const int valueArraySize, int *qualityArray, const int qualityArraySize, const int saveAsFloat, const char *units, const char *type, const char *timeZoneName, int storageFlag)
      * }
      */
     public static MemorySegment hec_dss_tsStoreIregular$address() {
@@ -988,16 +1441,18 @@ class hecdss_h {
 
     /**
      * {@snippet lang=c :
-     * int hec_dss_tsStoreIregular(dss_file *dss, const char *pathname, const char *startDateBase, int *times, const int timeGranularitySeconds, double *valueArray, const int valueArraySize, int *qualityArray, const int qualityArraySize, const int saveAsFloat, const char *units, const char *type)
+     * int hec_dss_tsStoreIregular(dss_file *dss, const char *pathname, const char *startDateBase, int *times, const int timeGranularitySeconds, double *valueArray, const int valueArraySize, int *qualityArray, const int qualityArraySize, const int saveAsFloat, const char *units, const char *type, const char *timeZoneName, int storageFlag)
      * }
      */
-    public static int hec_dss_tsStoreIregular(MemorySegment dss, MemorySegment pathname, MemorySegment startDateBase, MemorySegment times, int timeGranularitySeconds, MemorySegment valueArray, int valueArraySize, MemorySegment qualityArray, int qualityArraySize, int saveAsFloat, MemorySegment units, MemorySegment type) {
+    public static int hec_dss_tsStoreIregular(MemorySegment dss, MemorySegment pathname, MemorySegment startDateBase, MemorySegment times, int timeGranularitySeconds, MemorySegment valueArray, int valueArraySize, MemorySegment qualityArray, int qualityArraySize, int saveAsFloat, MemorySegment units, MemorySegment type, MemorySegment timeZoneName, int storageFlag) {
         var mh$ = hec_dss_tsStoreIregular.HANDLE;
         try {
             if (TRACE_DOWNCALLS) {
-                traceDowncall("hec_dss_tsStoreIregular", dss, pathname, startDateBase, times, timeGranularitySeconds, valueArray, valueArraySize, qualityArray, qualityArraySize, saveAsFloat, units, type);
+                traceDowncall("hec_dss_tsStoreIregular", dss, pathname, startDateBase, times, timeGranularitySeconds, valueArray, valueArraySize, qualityArray, qualityArraySize, saveAsFloat, units, type, timeZoneName, storageFlag);
             }
-            return (int)mh$.invokeExact(dss, pathname, startDateBase, times, timeGranularitySeconds, valueArray, valueArraySize, qualityArray, qualityArraySize, saveAsFloat, units, type);
+            return (int)mh$.invokeExact(dss, pathname, startDateBase, times, timeGranularitySeconds, valueArray, valueArraySize, qualityArray, qualityArraySize, saveAsFloat, units, type, timeZoneName, storageFlag);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -1023,7 +1478,7 @@ class hecdss_h {
             hecdss_h.C_INT
         );
 
-        public static final MemorySegment ADDR = hecdss_h.findOrThrow("hec_dss_locationRetrieve");
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("hec_dss_locationRetrieve");
 
         public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
     }
@@ -1070,6 +1525,8 @@ class hecdss_h {
                 traceDowncall("hec_dss_locationRetrieve", dss, fullPath, x, y, z, coordinateSystem, coordinateID, horizontalUnits, horizontalDatum, verticalUnits, verticalDatum, timeZoneName, timeZoneNameLength, supplemental, supplementalLength);
             }
             return (int)mh$.invokeExact(dss, fullPath, x, y, z, coordinateSystem, coordinateID, horizontalUnits, horizontalDatum, verticalUnits, verticalDatum, timeZoneName, timeZoneNameLength, supplemental, supplementalLength);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -1094,7 +1551,7 @@ class hecdss_h {
             hecdss_h.C_INT
         );
 
-        public static final MemorySegment ADDR = hecdss_h.findOrThrow("hec_dss_locationStore");
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("hec_dss_locationStore");
 
         public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
     }
@@ -1141,6 +1598,8 @@ class hecdss_h {
                 traceDowncall("hec_dss_locationStore", dss, fullPath, x, y, z, coordinateSystem, coordinateID, horizontalUnits, horizontalDatum, verticalUnits, verticalDatum, timeZoneName, supplemental, replace);
             }
             return (int)mh$.invokeExact(dss, fullPath, x, y, z, coordinateSystem, coordinateID, horizontalUnits, horizontalDatum, verticalUnits, verticalDatum, timeZoneName, supplemental, replace);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -1164,7 +1623,7 @@ class hecdss_h {
             hecdss_h.C_POINTER
         );
 
-        public static final MemorySegment ADDR = hecdss_h.findOrThrow("hec_dss_pdRetrieveInfo");
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("hec_dss_pdRetrieveInfo");
 
         public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
     }
@@ -1211,6 +1670,8 @@ class hecdss_h {
                 traceDowncall("hec_dss_pdRetrieveInfo", dss, pathname, numberOrdinates, numberCurves, unitsIndependent, unitsIndependentLength, unitsDependent, unitsDependentLength, typeIndependent, typeIndependentLength, typeDependent, typeDependentLength, labelsLength);
             }
             return (int)mh$.invokeExact(dss, pathname, numberOrdinates, numberCurves, unitsIndependent, unitsIndependentLength, unitsDependent, unitsDependentLength, typeIndependent, typeIndependentLength, typeDependent, typeDependentLength, labelsLength);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -1223,7 +1684,7 @@ class hecdss_h {
             hecdss_h.C_POINTER
         );
 
-        public static final MemorySegment ADDR = hecdss_h.findOrThrow("hec_dss_recordType");
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("hec_dss_recordType");
 
         public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
     }
@@ -1270,6 +1731,8 @@ class hecdss_h {
                 traceDowncall("hec_dss_recordType", dss, pathname);
             }
             return (int)mh$.invokeExact(dss, pathname);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -1295,10 +1758,12 @@ class hecdss_h {
             hecdss_h.C_POINTER,
             hecdss_h.C_INT,
             hecdss_h.C_POINTER,
+            hecdss_h.C_INT,
+            hecdss_h.C_POINTER,
             hecdss_h.C_INT
         );
 
-        public static final MemorySegment ADDR = hecdss_h.findOrThrow("hec_dss_pdRetrieve");
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("hec_dss_pdRetrieve");
 
         public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
     }
@@ -1306,7 +1771,7 @@ class hecdss_h {
     /**
      * Function descriptor for:
      * {@snippet lang=c :
-     * int hec_dss_pdRetrieve(dss_file *dss, const char *pathname, double *doubleOrdinates, const int doubleOrdinatesLength, double *doubleValues, const int doubleValuesLength, int *numberOrdinates, int *numberCurves, char *unitsIndependent, const int unitsIndependentLength, char *typeIndependent, const int typeIndependentLength, char *unitsDependent, const int unitsDependentLength, char *typeDependent, const int typeDependentLength, char *labels, const int labelsLength)
+     * int hec_dss_pdRetrieve(dss_file *dss, const char *pathname, double *doubleOrdinates, const int doubleOrdinatesLength, double *doubleValues, const int doubleValuesLength, int *numberOrdinates, int *numberCurves, char *unitsIndependent, const int unitsIndependentLength, char *typeIndependent, const int typeIndependentLength, char *unitsDependent, const int unitsDependentLength, char *typeDependent, const int typeDependentLength, char *labels, const int labelsLength, char *timeZoneName, const int timeZoneNameLength)
      * }
      */
     public static FunctionDescriptor hec_dss_pdRetrieve$descriptor() {
@@ -1316,7 +1781,7 @@ class hecdss_h {
     /**
      * Downcall method handle for:
      * {@snippet lang=c :
-     * int hec_dss_pdRetrieve(dss_file *dss, const char *pathname, double *doubleOrdinates, const int doubleOrdinatesLength, double *doubleValues, const int doubleValuesLength, int *numberOrdinates, int *numberCurves, char *unitsIndependent, const int unitsIndependentLength, char *typeIndependent, const int typeIndependentLength, char *unitsDependent, const int unitsDependentLength, char *typeDependent, const int typeDependentLength, char *labels, const int labelsLength)
+     * int hec_dss_pdRetrieve(dss_file *dss, const char *pathname, double *doubleOrdinates, const int doubleOrdinatesLength, double *doubleValues, const int doubleValuesLength, int *numberOrdinates, int *numberCurves, char *unitsIndependent, const int unitsIndependentLength, char *typeIndependent, const int typeIndependentLength, char *unitsDependent, const int unitsDependentLength, char *typeDependent, const int typeDependentLength, char *labels, const int labelsLength, char *timeZoneName, const int timeZoneNameLength)
      * }
      */
     public static MethodHandle hec_dss_pdRetrieve$handle() {
@@ -1326,7 +1791,7 @@ class hecdss_h {
     /**
      * Address for:
      * {@snippet lang=c :
-     * int hec_dss_pdRetrieve(dss_file *dss, const char *pathname, double *doubleOrdinates, const int doubleOrdinatesLength, double *doubleValues, const int doubleValuesLength, int *numberOrdinates, int *numberCurves, char *unitsIndependent, const int unitsIndependentLength, char *typeIndependent, const int typeIndependentLength, char *unitsDependent, const int unitsDependentLength, char *typeDependent, const int typeDependentLength, char *labels, const int labelsLength)
+     * int hec_dss_pdRetrieve(dss_file *dss, const char *pathname, double *doubleOrdinates, const int doubleOrdinatesLength, double *doubleValues, const int doubleValuesLength, int *numberOrdinates, int *numberCurves, char *unitsIndependent, const int unitsIndependentLength, char *typeIndependent, const int typeIndependentLength, char *unitsDependent, const int unitsDependentLength, char *typeDependent, const int typeDependentLength, char *labels, const int labelsLength, char *timeZoneName, const int timeZoneNameLength)
      * }
      */
     public static MemorySegment hec_dss_pdRetrieve$address() {
@@ -1335,16 +1800,18 @@ class hecdss_h {
 
     /**
      * {@snippet lang=c :
-     * int hec_dss_pdRetrieve(dss_file *dss, const char *pathname, double *doubleOrdinates, const int doubleOrdinatesLength, double *doubleValues, const int doubleValuesLength, int *numberOrdinates, int *numberCurves, char *unitsIndependent, const int unitsIndependentLength, char *typeIndependent, const int typeIndependentLength, char *unitsDependent, const int unitsDependentLength, char *typeDependent, const int typeDependentLength, char *labels, const int labelsLength)
+     * int hec_dss_pdRetrieve(dss_file *dss, const char *pathname, double *doubleOrdinates, const int doubleOrdinatesLength, double *doubleValues, const int doubleValuesLength, int *numberOrdinates, int *numberCurves, char *unitsIndependent, const int unitsIndependentLength, char *typeIndependent, const int typeIndependentLength, char *unitsDependent, const int unitsDependentLength, char *typeDependent, const int typeDependentLength, char *labels, const int labelsLength, char *timeZoneName, const int timeZoneNameLength)
      * }
      */
-    public static int hec_dss_pdRetrieve(MemorySegment dss, MemorySegment pathname, MemorySegment doubleOrdinates, int doubleOrdinatesLength, MemorySegment doubleValues, int doubleValuesLength, MemorySegment numberOrdinates, MemorySegment numberCurves, MemorySegment unitsIndependent, int unitsIndependentLength, MemorySegment typeIndependent, int typeIndependentLength, MemorySegment unitsDependent, int unitsDependentLength, MemorySegment typeDependent, int typeDependentLength, MemorySegment labels, int labelsLength) {
+    public static int hec_dss_pdRetrieve(MemorySegment dss, MemorySegment pathname, MemorySegment doubleOrdinates, int doubleOrdinatesLength, MemorySegment doubleValues, int doubleValuesLength, MemorySegment numberOrdinates, MemorySegment numberCurves, MemorySegment unitsIndependent, int unitsIndependentLength, MemorySegment typeIndependent, int typeIndependentLength, MemorySegment unitsDependent, int unitsDependentLength, MemorySegment typeDependent, int typeDependentLength, MemorySegment labels, int labelsLength, MemorySegment timeZoneName, int timeZoneNameLength) {
         var mh$ = hec_dss_pdRetrieve.HANDLE;
         try {
             if (TRACE_DOWNCALLS) {
-                traceDowncall("hec_dss_pdRetrieve", dss, pathname, doubleOrdinates, doubleOrdinatesLength, doubleValues, doubleValuesLength, numberOrdinates, numberCurves, unitsIndependent, unitsIndependentLength, typeIndependent, typeIndependentLength, unitsDependent, unitsDependentLength, typeDependent, typeDependentLength, labels, labelsLength);
+                traceDowncall("hec_dss_pdRetrieve", dss, pathname, doubleOrdinates, doubleOrdinatesLength, doubleValues, doubleValuesLength, numberOrdinates, numberCurves, unitsIndependent, unitsIndependentLength, typeIndependent, typeIndependentLength, unitsDependent, unitsDependentLength, typeDependent, typeDependentLength, labels, labelsLength, timeZoneName, timeZoneNameLength);
             }
-            return (int)mh$.invokeExact(dss, pathname, doubleOrdinates, doubleOrdinatesLength, doubleValues, doubleValuesLength, numberOrdinates, numberCurves, unitsIndependent, unitsIndependentLength, typeIndependent, typeIndependentLength, unitsDependent, unitsDependentLength, typeDependent, typeDependentLength, labels, labelsLength);
+            return (int)mh$.invokeExact(dss, pathname, doubleOrdinates, doubleOrdinatesLength, doubleValues, doubleValuesLength, numberOrdinates, numberCurves, unitsIndependent, unitsIndependentLength, typeIndependent, typeIndependentLength, unitsDependent, unitsDependentLength, typeDependent, typeDependentLength, labels, labelsLength, timeZoneName, timeZoneNameLength);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -1366,10 +1833,11 @@ class hecdss_h {
             hecdss_h.C_POINTER,
             hecdss_h.C_POINTER,
             hecdss_h.C_POINTER,
-            hecdss_h.C_INT
+            hecdss_h.C_INT,
+            hecdss_h.C_POINTER
         );
 
-        public static final MemorySegment ADDR = hecdss_h.findOrThrow("hec_dss_pdStore");
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("hec_dss_pdStore");
 
         public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
     }
@@ -1377,7 +1845,7 @@ class hecdss_h {
     /**
      * Function descriptor for:
      * {@snippet lang=c :
-     * int hec_dss_pdStore(dss_file *dss, const char *pathname, double *doubleOrdinates, const int doubleOrdinatesLength, double *doubleValues, const int doubleValuesLength, const int numberOrdinates, const int numberCurves, const char *unitsIndependent, const char *typeIndependent, const char *unitsDependent, const char *typeDependent, const char *labels, const int labelsLength)
+     * int hec_dss_pdStore(dss_file *dss, const char *pathname, double *doubleOrdinates, const int doubleOrdinatesLength, double *doubleValues, const int doubleValuesLength, const int numberOrdinates, const int numberCurves, const char *unitsIndependent, const char *typeIndependent, const char *unitsDependent, const char *typeDependent, const char *labels, const int labelsLength, const char *timeZoneName)
      * }
      */
     public static FunctionDescriptor hec_dss_pdStore$descriptor() {
@@ -1387,7 +1855,7 @@ class hecdss_h {
     /**
      * Downcall method handle for:
      * {@snippet lang=c :
-     * int hec_dss_pdStore(dss_file *dss, const char *pathname, double *doubleOrdinates, const int doubleOrdinatesLength, double *doubleValues, const int doubleValuesLength, const int numberOrdinates, const int numberCurves, const char *unitsIndependent, const char *typeIndependent, const char *unitsDependent, const char *typeDependent, const char *labels, const int labelsLength)
+     * int hec_dss_pdStore(dss_file *dss, const char *pathname, double *doubleOrdinates, const int doubleOrdinatesLength, double *doubleValues, const int doubleValuesLength, const int numberOrdinates, const int numberCurves, const char *unitsIndependent, const char *typeIndependent, const char *unitsDependent, const char *typeDependent, const char *labels, const int labelsLength, const char *timeZoneName)
      * }
      */
     public static MethodHandle hec_dss_pdStore$handle() {
@@ -1397,7 +1865,7 @@ class hecdss_h {
     /**
      * Address for:
      * {@snippet lang=c :
-     * int hec_dss_pdStore(dss_file *dss, const char *pathname, double *doubleOrdinates, const int doubleOrdinatesLength, double *doubleValues, const int doubleValuesLength, const int numberOrdinates, const int numberCurves, const char *unitsIndependent, const char *typeIndependent, const char *unitsDependent, const char *typeDependent, const char *labels, const int labelsLength)
+     * int hec_dss_pdStore(dss_file *dss, const char *pathname, double *doubleOrdinates, const int doubleOrdinatesLength, double *doubleValues, const int doubleValuesLength, const int numberOrdinates, const int numberCurves, const char *unitsIndependent, const char *typeIndependent, const char *unitsDependent, const char *typeDependent, const char *labels, const int labelsLength, const char *timeZoneName)
      * }
      */
     public static MemorySegment hec_dss_pdStore$address() {
@@ -1406,16 +1874,18 @@ class hecdss_h {
 
     /**
      * {@snippet lang=c :
-     * int hec_dss_pdStore(dss_file *dss, const char *pathname, double *doubleOrdinates, const int doubleOrdinatesLength, double *doubleValues, const int doubleValuesLength, const int numberOrdinates, const int numberCurves, const char *unitsIndependent, const char *typeIndependent, const char *unitsDependent, const char *typeDependent, const char *labels, const int labelsLength)
+     * int hec_dss_pdStore(dss_file *dss, const char *pathname, double *doubleOrdinates, const int doubleOrdinatesLength, double *doubleValues, const int doubleValuesLength, const int numberOrdinates, const int numberCurves, const char *unitsIndependent, const char *typeIndependent, const char *unitsDependent, const char *typeDependent, const char *labels, const int labelsLength, const char *timeZoneName)
      * }
      */
-    public static int hec_dss_pdStore(MemorySegment dss, MemorySegment pathname, MemorySegment doubleOrdinates, int doubleOrdinatesLength, MemorySegment doubleValues, int doubleValuesLength, int numberOrdinates, int numberCurves, MemorySegment unitsIndependent, MemorySegment typeIndependent, MemorySegment unitsDependent, MemorySegment typeDependent, MemorySegment labels, int labelsLength) {
+    public static int hec_dss_pdStore(MemorySegment dss, MemorySegment pathname, MemorySegment doubleOrdinates, int doubleOrdinatesLength, MemorySegment doubleValues, int doubleValuesLength, int numberOrdinates, int numberCurves, MemorySegment unitsIndependent, MemorySegment typeIndependent, MemorySegment unitsDependent, MemorySegment typeDependent, MemorySegment labels, int labelsLength, MemorySegment timeZoneName) {
         var mh$ = hec_dss_pdStore.HANDLE;
         try {
             if (TRACE_DOWNCALLS) {
-                traceDowncall("hec_dss_pdStore", dss, pathname, doubleOrdinates, doubleOrdinatesLength, doubleValues, doubleValuesLength, numberOrdinates, numberCurves, unitsIndependent, typeIndependent, unitsDependent, typeDependent, labels, labelsLength);
+                traceDowncall("hec_dss_pdStore", dss, pathname, doubleOrdinates, doubleOrdinatesLength, doubleValues, doubleValuesLength, numberOrdinates, numberCurves, unitsIndependent, typeIndependent, unitsDependent, typeDependent, labels, labelsLength, timeZoneName);
             }
-            return (int)mh$.invokeExact(dss, pathname, doubleOrdinates, doubleOrdinatesLength, doubleValues, doubleValuesLength, numberOrdinates, numberCurves, unitsIndependent, typeIndependent, unitsDependent, typeDependent, labels, labelsLength);
+            return (int)mh$.invokeExact(dss, pathname, doubleOrdinates, doubleOrdinatesLength, doubleValues, doubleValuesLength, numberOrdinates, numberCurves, unitsIndependent, typeIndependent, unitsDependent, typeDependent, labels, labelsLength, timeZoneName);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -1462,7 +1932,7 @@ class hecdss_h {
             hecdss_h.C_INT
         );
 
-        public static final MemorySegment ADDR = hecdss_h.findOrThrow("hec_dss_gridRetrieve");
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("hec_dss_gridRetrieve");
 
         public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
     }
@@ -1509,6 +1979,8 @@ class hecdss_h {
                 traceDowncall("hec_dss_gridRetrieve", dss, pathname, boolRetrieveData, type, dataType, lowerLeftCellX, lowerLeftCellY, numberOfCellsX, numberOfCellsY, numberOfRanges, srsDefinitionType, timeZoneRawOffset, isInterval, isTimeStamped, dataUnits, dataUnitsLength, dataSource, dataSourceLength, srsName, srsNameLength, srsDefinition, srsDefinitionLength, timeZoneID, timeZoneIDLength, cellSize, xCoordOfGridCellZero, yCoordOfGridCellZero, nullValue, maxDataValue, minDataValue, meanDataValue, rangeLimitTable, rangeTablesLength, numberEqualOrExceedingRangeLimit, data, dataLength);
             }
             return (int)mh$.invokeExact(dss, pathname, boolRetrieveData, type, dataType, lowerLeftCellX, lowerLeftCellY, numberOfCellsX, numberOfCellsY, numberOfRanges, srsDefinitionType, timeZoneRawOffset, isInterval, isTimeStamped, dataUnits, dataUnitsLength, dataSource, dataSourceLength, srsName, srsNameLength, srsDefinition, srsDefinitionLength, timeZoneID, timeZoneIDLength, cellSize, xCoordOfGridCellZero, yCoordOfGridCellZero, nullValue, maxDataValue, minDataValue, meanDataValue, rangeLimitTable, rangeTablesLength, numberEqualOrExceedingRangeLimit, data, dataLength);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -1530,6 +2002,7 @@ class hecdss_h {
             hecdss_h.C_INT,
             hecdss_h.C_INT,
             hecdss_h.C_INT,
+            hecdss_h.C_INT,
             hecdss_h.C_POINTER,
             hecdss_h.C_POINTER,
             hecdss_h.C_POINTER,
@@ -1547,7 +2020,7 @@ class hecdss_h {
             hecdss_h.C_POINTER
         );
 
-        public static final MemorySegment ADDR = hecdss_h.findOrThrow("hec_dss_gridStore");
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("hec_dss_gridStore");
 
         public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
     }
@@ -1555,7 +2028,7 @@ class hecdss_h {
     /**
      * Function descriptor for:
      * {@snippet lang=c :
-     * int hec_dss_gridStore(dss_file *dss, const char *pathname, const int gridType, const int dataType, const int lowerLeftCellX, const int lowerLeftCellY, const int numberOfCellsX, const int numberOfCellsY, const int numberOfRanges, const int srsDefinitionType, const int timeZoneRawOffset, int isInterval, const int isTimeStamped, const char *dataUnits, const char *dataSource, const char *srsName, const char *srsDefinition, const char *timeZoneID, const float cellSize, const float xCoordOfGridCellZero, const float yCoordOfGridCellZero, const float nullValue, const float maxDataValue, const float minDataValue, const float meanDataValue, float *rangeLimitTable, int *numberEqualOrExceedingRangeLimit, float *data)
+     * int hec_dss_gridStore(dss_file *dss, const char *pathname, const int gridType, const int dataType, const int lowerLeftCellX, const int lowerLeftCellY, const int numberOfCellsX, const int numberOfCellsY, const int numberOfRanges, const int srsDefinitionType, const int timeZoneRawOffset, int isInterval, const int isTimeStamped, const int compressionSize, const char *dataUnits, const char *dataSource, const char *srsName, const char *srsDefinition, const char *timeZoneID, const float cellSize, const float xCoordOfGridCellZero, const float yCoordOfGridCellZero, const float nullValue, const float maxDataValue, const float minDataValue, const float meanDataValue, float *rangeLimitTable, int *numberEqualOrExceedingRangeLimit, float *data)
      * }
      */
     public static FunctionDescriptor hec_dss_gridStore$descriptor() {
@@ -1565,7 +2038,7 @@ class hecdss_h {
     /**
      * Downcall method handle for:
      * {@snippet lang=c :
-     * int hec_dss_gridStore(dss_file *dss, const char *pathname, const int gridType, const int dataType, const int lowerLeftCellX, const int lowerLeftCellY, const int numberOfCellsX, const int numberOfCellsY, const int numberOfRanges, const int srsDefinitionType, const int timeZoneRawOffset, int isInterval, const int isTimeStamped, const char *dataUnits, const char *dataSource, const char *srsName, const char *srsDefinition, const char *timeZoneID, const float cellSize, const float xCoordOfGridCellZero, const float yCoordOfGridCellZero, const float nullValue, const float maxDataValue, const float minDataValue, const float meanDataValue, float *rangeLimitTable, int *numberEqualOrExceedingRangeLimit, float *data)
+     * int hec_dss_gridStore(dss_file *dss, const char *pathname, const int gridType, const int dataType, const int lowerLeftCellX, const int lowerLeftCellY, const int numberOfCellsX, const int numberOfCellsY, const int numberOfRanges, const int srsDefinitionType, const int timeZoneRawOffset, int isInterval, const int isTimeStamped, const int compressionSize, const char *dataUnits, const char *dataSource, const char *srsName, const char *srsDefinition, const char *timeZoneID, const float cellSize, const float xCoordOfGridCellZero, const float yCoordOfGridCellZero, const float nullValue, const float maxDataValue, const float minDataValue, const float meanDataValue, float *rangeLimitTable, int *numberEqualOrExceedingRangeLimit, float *data)
      * }
      */
     public static MethodHandle hec_dss_gridStore$handle() {
@@ -1575,7 +2048,7 @@ class hecdss_h {
     /**
      * Address for:
      * {@snippet lang=c :
-     * int hec_dss_gridStore(dss_file *dss, const char *pathname, const int gridType, const int dataType, const int lowerLeftCellX, const int lowerLeftCellY, const int numberOfCellsX, const int numberOfCellsY, const int numberOfRanges, const int srsDefinitionType, const int timeZoneRawOffset, int isInterval, const int isTimeStamped, const char *dataUnits, const char *dataSource, const char *srsName, const char *srsDefinition, const char *timeZoneID, const float cellSize, const float xCoordOfGridCellZero, const float yCoordOfGridCellZero, const float nullValue, const float maxDataValue, const float minDataValue, const float meanDataValue, float *rangeLimitTable, int *numberEqualOrExceedingRangeLimit, float *data)
+     * int hec_dss_gridStore(dss_file *dss, const char *pathname, const int gridType, const int dataType, const int lowerLeftCellX, const int lowerLeftCellY, const int numberOfCellsX, const int numberOfCellsY, const int numberOfRanges, const int srsDefinitionType, const int timeZoneRawOffset, int isInterval, const int isTimeStamped, const int compressionSize, const char *dataUnits, const char *dataSource, const char *srsName, const char *srsDefinition, const char *timeZoneID, const float cellSize, const float xCoordOfGridCellZero, const float yCoordOfGridCellZero, const float nullValue, const float maxDataValue, const float minDataValue, const float meanDataValue, float *rangeLimitTable, int *numberEqualOrExceedingRangeLimit, float *data)
      * }
      */
     public static MemorySegment hec_dss_gridStore$address() {
@@ -1584,16 +2057,18 @@ class hecdss_h {
 
     /**
      * {@snippet lang=c :
-     * int hec_dss_gridStore(dss_file *dss, const char *pathname, const int gridType, const int dataType, const int lowerLeftCellX, const int lowerLeftCellY, const int numberOfCellsX, const int numberOfCellsY, const int numberOfRanges, const int srsDefinitionType, const int timeZoneRawOffset, int isInterval, const int isTimeStamped, const char *dataUnits, const char *dataSource, const char *srsName, const char *srsDefinition, const char *timeZoneID, const float cellSize, const float xCoordOfGridCellZero, const float yCoordOfGridCellZero, const float nullValue, const float maxDataValue, const float minDataValue, const float meanDataValue, float *rangeLimitTable, int *numberEqualOrExceedingRangeLimit, float *data)
+     * int hec_dss_gridStore(dss_file *dss, const char *pathname, const int gridType, const int dataType, const int lowerLeftCellX, const int lowerLeftCellY, const int numberOfCellsX, const int numberOfCellsY, const int numberOfRanges, const int srsDefinitionType, const int timeZoneRawOffset, int isInterval, const int isTimeStamped, const int compressionSize, const char *dataUnits, const char *dataSource, const char *srsName, const char *srsDefinition, const char *timeZoneID, const float cellSize, const float xCoordOfGridCellZero, const float yCoordOfGridCellZero, const float nullValue, const float maxDataValue, const float minDataValue, const float meanDataValue, float *rangeLimitTable, int *numberEqualOrExceedingRangeLimit, float *data)
      * }
      */
-    public static int hec_dss_gridStore(MemorySegment dss, MemorySegment pathname, int gridType, int dataType, int lowerLeftCellX, int lowerLeftCellY, int numberOfCellsX, int numberOfCellsY, int numberOfRanges, int srsDefinitionType, int timeZoneRawOffset, int isInterval, int isTimeStamped, MemorySegment dataUnits, MemorySegment dataSource, MemorySegment srsName, MemorySegment srsDefinition, MemorySegment timeZoneID, float cellSize, float xCoordOfGridCellZero, float yCoordOfGridCellZero, float nullValue, float maxDataValue, float minDataValue, float meanDataValue, MemorySegment rangeLimitTable, MemorySegment numberEqualOrExceedingRangeLimit, MemorySegment data) {
+    public static int hec_dss_gridStore(MemorySegment dss, MemorySegment pathname, int gridType, int dataType, int lowerLeftCellX, int lowerLeftCellY, int numberOfCellsX, int numberOfCellsY, int numberOfRanges, int srsDefinitionType, int timeZoneRawOffset, int isInterval, int isTimeStamped, int compressionSize, MemorySegment dataUnits, MemorySegment dataSource, MemorySegment srsName, MemorySegment srsDefinition, MemorySegment timeZoneID, float cellSize, float xCoordOfGridCellZero, float yCoordOfGridCellZero, float nullValue, float maxDataValue, float minDataValue, float meanDataValue, MemorySegment rangeLimitTable, MemorySegment numberEqualOrExceedingRangeLimit, MemorySegment data) {
         var mh$ = hec_dss_gridStore.HANDLE;
         try {
             if (TRACE_DOWNCALLS) {
-                traceDowncall("hec_dss_gridStore", dss, pathname, gridType, dataType, lowerLeftCellX, lowerLeftCellY, numberOfCellsX, numberOfCellsY, numberOfRanges, srsDefinitionType, timeZoneRawOffset, isInterval, isTimeStamped, dataUnits, dataSource, srsName, srsDefinition, timeZoneID, cellSize, xCoordOfGridCellZero, yCoordOfGridCellZero, nullValue, maxDataValue, minDataValue, meanDataValue, rangeLimitTable, numberEqualOrExceedingRangeLimit, data);
+                traceDowncall("hec_dss_gridStore", dss, pathname, gridType, dataType, lowerLeftCellX, lowerLeftCellY, numberOfCellsX, numberOfCellsY, numberOfRanges, srsDefinitionType, timeZoneRawOffset, isInterval, isTimeStamped, compressionSize, dataUnits, dataSource, srsName, srsDefinition, timeZoneID, cellSize, xCoordOfGridCellZero, yCoordOfGridCellZero, nullValue, maxDataValue, minDataValue, meanDataValue, rangeLimitTable, numberEqualOrExceedingRangeLimit, data);
             }
-            return (int)mh$.invokeExact(dss, pathname, gridType, dataType, lowerLeftCellX, lowerLeftCellY, numberOfCellsX, numberOfCellsY, numberOfRanges, srsDefinitionType, timeZoneRawOffset, isInterval, isTimeStamped, dataUnits, dataSource, srsName, srsDefinition, timeZoneID, cellSize, xCoordOfGridCellZero, yCoordOfGridCellZero, nullValue, maxDataValue, minDataValue, meanDataValue, rangeLimitTable, numberEqualOrExceedingRangeLimit, data);
+            return (int)mh$.invokeExact(dss, pathname, gridType, dataType, lowerLeftCellX, lowerLeftCellY, numberOfCellsX, numberOfCellsY, numberOfRanges, srsDefinitionType, timeZoneRawOffset, isInterval, isTimeStamped, compressionSize, dataUnits, dataSource, srsName, srsDefinition, timeZoneID, cellSize, xCoordOfGridCellZero, yCoordOfGridCellZero, nullValue, maxDataValue, minDataValue, meanDataValue, rangeLimitTable, numberEqualOrExceedingRangeLimit, data);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -1608,7 +2083,7 @@ class hecdss_h {
             hecdss_h.C_POINTER
         );
 
-        public static final MemorySegment ADDR = hecdss_h.findOrThrow("hec_dss_dateToYearMonthDay");
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("hec_dss_dateToYearMonthDay");
 
         public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
     }
@@ -1655,6 +2130,8 @@ class hecdss_h {
                 traceDowncall("hec_dss_dateToYearMonthDay", date, year, month, day);
             }
             return (int)mh$.invokeExact(date, year, month, day);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -1667,7 +2144,7 @@ class hecdss_h {
             hecdss_h.C_POINTER
         );
 
-        public static final MemorySegment ADDR = hecdss_h.findOrThrow("hec_dss_delete");
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("hec_dss_delete");
 
         public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
     }
@@ -1714,6 +2191,8 @@ class hecdss_h {
                 traceDowncall("hec_dss_delete", dss, pathname);
             }
             return (int)mh$.invokeExact(dss, pathname);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -1725,7 +2204,7 @@ class hecdss_h {
             hecdss_h.C_POINTER
         );
 
-        public static final MemorySegment ADDR = hecdss_h.findOrThrow("hec_dss_squeeze");
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("hec_dss_squeeze");
 
         public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
     }
@@ -1772,6 +2251,8 @@ class hecdss_h {
                 traceDowncall("hec_dss_squeeze", pathname);
             }
             return (int)mh$.invokeExact(pathname);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -1783,7 +2264,7 @@ class hecdss_h {
             hecdss_h.C_POINTER
         );
 
-        public static final MemorySegment ADDR = hecdss_h.findOrThrow("hec_dss_dateToJulian");
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("hec_dss_dateToJulian");
 
         public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
     }
@@ -1830,6 +2311,8 @@ class hecdss_h {
                 traceDowncall("hec_dss_dateToJulian", date);
             }
             return (int)mh$.invokeExact(date);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
@@ -1843,7 +2326,7 @@ class hecdss_h {
             hecdss_h.C_POINTER
         );
 
-        public static final MemorySegment ADDR = hecdss_h.findOrThrow("hec_dss_julianToYearMonthDay");
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("hec_dss_julianToYearMonthDay");
 
         public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
     }
@@ -1890,19 +2373,27 @@ class hecdss_h {
                 traceDowncall("hec_dss_julianToYearMonthDay", julian, year, month, day);
             }
             mh$.invokeExact(julian, year, month, day);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
     }
 
-    private static class hec_dss_convertToVersion7 {
+    private static class hec_dss_arrayStore {
         public static final FunctionDescriptor DESC = FunctionDescriptor.of(
             hecdss_h.C_INT,
             hecdss_h.C_POINTER,
-            hecdss_h.C_POINTER
+            hecdss_h.C_POINTER,
+            hecdss_h.C_POINTER,
+            hecdss_h.C_INT,
+            hecdss_h.C_POINTER,
+            hecdss_h.C_INT,
+            hecdss_h.C_POINTER,
+            hecdss_h.C_INT
         );
 
-        public static final MemorySegment ADDR = hecdss_h.findOrThrow("hec_dss_convertToVersion7");
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("hec_dss_arrayStore");
 
         public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
     }
@@ -1910,48 +2401,316 @@ class hecdss_h {
     /**
      * Function descriptor for:
      * {@snippet lang=c :
-     * int hec_dss_convertToVersion7(const char *filenameVersion6, const char *filenameVersion7)
+     * int hec_dss_arrayStore(dss_file *dss, const char *pathname, int *intValues, const int intValuesLength, float *floatValues, const int floatValuesLength, double *doubleValues, const int doubleValuesLength)
      * }
      */
-    public static FunctionDescriptor hec_dss_convertToVersion7$descriptor() {
-        return hec_dss_convertToVersion7.DESC;
+    public static FunctionDescriptor hec_dss_arrayStore$descriptor() {
+        return hec_dss_arrayStore.DESC;
     }
 
     /**
      * Downcall method handle for:
      * {@snippet lang=c :
-     * int hec_dss_convertToVersion7(const char *filenameVersion6, const char *filenameVersion7)
+     * int hec_dss_arrayStore(dss_file *dss, const char *pathname, int *intValues, const int intValuesLength, float *floatValues, const int floatValuesLength, double *doubleValues, const int doubleValuesLength)
      * }
      */
-    public static MethodHandle hec_dss_convertToVersion7$handle() {
-        return hec_dss_convertToVersion7.HANDLE;
+    public static MethodHandle hec_dss_arrayStore$handle() {
+        return hec_dss_arrayStore.HANDLE;
     }
 
     /**
      * Address for:
      * {@snippet lang=c :
-     * int hec_dss_convertToVersion7(const char *filenameVersion6, const char *filenameVersion7)
+     * int hec_dss_arrayStore(dss_file *dss, const char *pathname, int *intValues, const int intValuesLength, float *floatValues, const int floatValuesLength, double *doubleValues, const int doubleValuesLength)
      * }
      */
-    public static MemorySegment hec_dss_convertToVersion7$address() {
-        return hec_dss_convertToVersion7.ADDR;
+    public static MemorySegment hec_dss_arrayStore$address() {
+        return hec_dss_arrayStore.ADDR;
     }
 
     /**
      * {@snippet lang=c :
-     * int hec_dss_convertToVersion7(const char *filenameVersion6, const char *filenameVersion7)
+     * int hec_dss_arrayStore(dss_file *dss, const char *pathname, int *intValues, const int intValuesLength, float *floatValues, const int floatValuesLength, double *doubleValues, const int doubleValuesLength)
      * }
      */
-    public static int hec_dss_convertToVersion7(MemorySegment filenameVersion6, MemorySegment filenameVersion7) {
-        var mh$ = hec_dss_convertToVersion7.HANDLE;
+    public static int hec_dss_arrayStore(MemorySegment dss, MemorySegment pathname, MemorySegment intValues, int intValuesLength, MemorySegment floatValues, int floatValuesLength, MemorySegment doubleValues, int doubleValuesLength) {
+        var mh$ = hec_dss_arrayStore.HANDLE;
         try {
             if (TRACE_DOWNCALLS) {
-                traceDowncall("hec_dss_convertToVersion7", filenameVersion6, filenameVersion7);
+                traceDowncall("hec_dss_arrayStore", dss, pathname, intValues, intValuesLength, floatValues, floatValuesLength, doubleValues, doubleValuesLength);
             }
-            return (int)mh$.invokeExact(filenameVersion6, filenameVersion7);
+            return (int)mh$.invokeExact(dss, pathname, intValues, intValuesLength, floatValues, floatValuesLength, doubleValues, doubleValuesLength);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
         } catch (Throwable ex$) {
            throw new AssertionError("should not reach here", ex$);
         }
+    }
+
+    private static class hec_dss_arrayRetrieveInfo {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            hecdss_h.C_INT,
+            hecdss_h.C_POINTER,
+            hecdss_h.C_POINTER,
+            hecdss_h.C_POINTER,
+            hecdss_h.C_POINTER,
+            hecdss_h.C_POINTER
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("hec_dss_arrayRetrieveInfo");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int hec_dss_arrayRetrieveInfo(dss_file *dss, const char *pathname, int *intValuesRead, int *floatValuesRead, int *doubleValuesRead)
+     * }
+     */
+    public static FunctionDescriptor hec_dss_arrayRetrieveInfo$descriptor() {
+        return hec_dss_arrayRetrieveInfo.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int hec_dss_arrayRetrieveInfo(dss_file *dss, const char *pathname, int *intValuesRead, int *floatValuesRead, int *doubleValuesRead)
+     * }
+     */
+    public static MethodHandle hec_dss_arrayRetrieveInfo$handle() {
+        return hec_dss_arrayRetrieveInfo.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int hec_dss_arrayRetrieveInfo(dss_file *dss, const char *pathname, int *intValuesRead, int *floatValuesRead, int *doubleValuesRead)
+     * }
+     */
+    public static MemorySegment hec_dss_arrayRetrieveInfo$address() {
+        return hec_dss_arrayRetrieveInfo.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int hec_dss_arrayRetrieveInfo(dss_file *dss, const char *pathname, int *intValuesRead, int *floatValuesRead, int *doubleValuesRead)
+     * }
+     */
+    public static int hec_dss_arrayRetrieveInfo(MemorySegment dss, MemorySegment pathname, MemorySegment intValuesRead, MemorySegment floatValuesRead, MemorySegment doubleValuesRead) {
+        var mh$ = hec_dss_arrayRetrieveInfo.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("hec_dss_arrayRetrieveInfo", dss, pathname, intValuesRead, floatValuesRead, doubleValuesRead);
+            }
+            return (int)mh$.invokeExact(dss, pathname, intValuesRead, floatValuesRead, doubleValuesRead);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class hec_dss_arrayRetrieve {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            hecdss_h.C_INT,
+            hecdss_h.C_POINTER,
+            hecdss_h.C_POINTER,
+            hecdss_h.C_POINTER,
+            hecdss_h.C_INT,
+            hecdss_h.C_POINTER,
+            hecdss_h.C_INT,
+            hecdss_h.C_POINTER,
+            hecdss_h.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("hec_dss_arrayRetrieve");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int hec_dss_arrayRetrieve(dss_file *dss, const char *pathname, int *intValues, const int intValuesLength, float *floatValues, const int floatValuesLength, double *doubleValues, const int doubleValuesLength)
+     * }
+     */
+    public static FunctionDescriptor hec_dss_arrayRetrieve$descriptor() {
+        return hec_dss_arrayRetrieve.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int hec_dss_arrayRetrieve(dss_file *dss, const char *pathname, int *intValues, const int intValuesLength, float *floatValues, const int floatValuesLength, double *doubleValues, const int doubleValuesLength)
+     * }
+     */
+    public static MethodHandle hec_dss_arrayRetrieve$handle() {
+        return hec_dss_arrayRetrieve.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int hec_dss_arrayRetrieve(dss_file *dss, const char *pathname, int *intValues, const int intValuesLength, float *floatValues, const int floatValuesLength, double *doubleValues, const int doubleValuesLength)
+     * }
+     */
+    public static MemorySegment hec_dss_arrayRetrieve$address() {
+        return hec_dss_arrayRetrieve.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int hec_dss_arrayRetrieve(dss_file *dss, const char *pathname, int *intValues, const int intValuesLength, float *floatValues, const int floatValuesLength, double *doubleValues, const int doubleValuesLength)
+     * }
+     */
+    public static int hec_dss_arrayRetrieve(MemorySegment dss, MemorySegment pathname, MemorySegment intValues, int intValuesLength, MemorySegment floatValues, int floatValuesLength, MemorySegment doubleValues, int doubleValuesLength) {
+        var mh$ = hec_dss_arrayRetrieve.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("hec_dss_arrayRetrieve", dss, pathname, intValues, intValuesLength, floatValues, floatValuesLength, doubleValues, doubleValuesLength);
+            }
+            return (int)mh$.invokeExact(dss, pathname, intValues, intValuesLength, floatValues, floatValuesLength, doubleValues, doubleValuesLength);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class hec_dss_textStore {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            hecdss_h.C_INT,
+            hecdss_h.C_POINTER,
+            hecdss_h.C_POINTER,
+            hecdss_h.C_POINTER,
+            hecdss_h.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("hec_dss_textStore");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int hec_dss_textStore(dss_file *dss, const char *pathname, const char *text, int length)
+     * }
+     */
+    public static FunctionDescriptor hec_dss_textStore$descriptor() {
+        return hec_dss_textStore.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int hec_dss_textStore(dss_file *dss, const char *pathname, const char *text, int length)
+     * }
+     */
+    public static MethodHandle hec_dss_textStore$handle() {
+        return hec_dss_textStore.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int hec_dss_textStore(dss_file *dss, const char *pathname, const char *text, int length)
+     * }
+     */
+    public static MemorySegment hec_dss_textStore$address() {
+        return hec_dss_textStore.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int hec_dss_textStore(dss_file *dss, const char *pathname, const char *text, int length)
+     * }
+     */
+    public static int hec_dss_textStore(MemorySegment dss, MemorySegment pathname, MemorySegment text, int length) {
+        var mh$ = hec_dss_textStore.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("hec_dss_textStore", dss, pathname, text, length);
+            }
+            return (int)mh$.invokeExact(dss, pathname, text, length);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+
+    private static class hec_dss_textRetrieve {
+        public static final FunctionDescriptor DESC = FunctionDescriptor.of(
+            hecdss_h.C_INT,
+            hecdss_h.C_POINTER,
+            hecdss_h.C_POINTER,
+            hecdss_h.C_POINTER,
+            hecdss_h.C_INT
+        );
+
+        public static final MemorySegment ADDR = SYMBOL_LOOKUP.findOrThrow("hec_dss_textRetrieve");
+
+        public static final MethodHandle HANDLE = Linker.nativeLinker().downcallHandle(ADDR, DESC);
+    }
+
+    /**
+     * Function descriptor for:
+     * {@snippet lang=c :
+     * int hec_dss_textRetrieve(dss_file *dss, const char *pathname, char *buffer, const int bufferLength)
+     * }
+     */
+    public static FunctionDescriptor hec_dss_textRetrieve$descriptor() {
+        return hec_dss_textRetrieve.DESC;
+    }
+
+    /**
+     * Downcall method handle for:
+     * {@snippet lang=c :
+     * int hec_dss_textRetrieve(dss_file *dss, const char *pathname, char *buffer, const int bufferLength)
+     * }
+     */
+    public static MethodHandle hec_dss_textRetrieve$handle() {
+        return hec_dss_textRetrieve.HANDLE;
+    }
+
+    /**
+     * Address for:
+     * {@snippet lang=c :
+     * int hec_dss_textRetrieve(dss_file *dss, const char *pathname, char *buffer, const int bufferLength)
+     * }
+     */
+    public static MemorySegment hec_dss_textRetrieve$address() {
+        return hec_dss_textRetrieve.ADDR;
+    }
+
+    /**
+     * {@snippet lang=c :
+     * int hec_dss_textRetrieve(dss_file *dss, const char *pathname, char *buffer, const int bufferLength)
+     * }
+     */
+    public static int hec_dss_textRetrieve(MemorySegment dss, MemorySegment pathname, MemorySegment buffer, int bufferLength) {
+        var mh$ = hec_dss_textRetrieve.HANDLE;
+        try {
+            if (TRACE_DOWNCALLS) {
+                traceDowncall("hec_dss_textRetrieve", dss, pathname, buffer, bufferLength);
+            }
+            return (int)mh$.invokeExact(dss, pathname, buffer, bufferLength);
+        } catch (Error | RuntimeException ex) {
+           throw ex;
+        } catch (Throwable ex$) {
+           throw new AssertionError("should not reach here", ex$);
+        }
+    }
+    private static final int HEC_DSS_BUFFER_TOO_SMALL = (int)-17L;
+    /**
+     * {@snippet lang=c :
+     * #define HEC_DSS_BUFFER_TOO_SMALL -17
+     * }
+     */
+    public static int HEC_DSS_BUFFER_TOO_SMALL() {
+        return HEC_DSS_BUFFER_TOO_SMALL;
     }
 }
 
