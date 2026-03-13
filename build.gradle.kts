@@ -9,7 +9,7 @@ version = "1.0-SNAPSHOT"
 // ------ Java Configuration -----------------------
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(24))
+        languageVersion.set(JavaLanguageVersion.of(25))
     }
 }
 
@@ -24,7 +24,7 @@ val windowsNatives by configurations.creating
 val linuxNatives by configurations.creating
 
 // Define Version Numbers
-val hecDssVersion = "7-IV-1"
+val hecDssVersion = "7-JA-6"
 val nativeLibLoaderVersion = "2.5.0"
 val junitVersion = "5.10.0"
 
@@ -74,9 +74,51 @@ fun registerNativeTask(name: String, sources: FileCollection, platform: String) 
     }
 }
 
+// -------------- jextract: Generate FFM Bindings -----------------------
+
+val jextractGroup = "code generation"
+val headerFile = file("src/main/native/hecdss.h")
+val generatedSourceDir = file("src/main/java")
+val bindingsPackage = "mil.army.usace.hec.dss.internal"
+val hecDssGitRef = project.findProperty("hecdss.gitRef")?.toString() ?: "main"
+
+tasks.register("downloadHeader") {
+    group = jextractGroup
+    description = "Download hecdss.h from the hec-dss GitHub repository."
+
+    outputs.file(headerFile)
+
+    doLast {
+        val uri = uri("https://raw.githubusercontent.com/HydrologicEngineeringCenter/hec-dss/$hecDssGitRef/heclib/hecdss/hecdss.h")
+        headerFile.parentFile.mkdirs()
+        uri.toURL().openStream().use { input ->
+            headerFile.outputStream().use { output -> input.copyTo(output) }
+        }
+        println("Downloaded hecdss.h from ref '$hecDssGitRef' to ${headerFile.path}")
+    }
+}
+
+tasks.register<Exec>("generateBindings") {
+    group = jextractGroup
+    description = "Generate Java FFM bindings from hecdss.h using jextract."
+    dependsOn("downloadHeader")
+
+    val jextractBin = project.findProperty("jextract.path")?.toString() ?: "jextract"
+
+    inputs.file(headerFile)
+    outputs.dir(generatedSourceDir.resolve(bindingsPackage.replace('.', '/')))
+
+    commandLine(
+        jextractBin,
+        "--target-package", bindingsPackage,
+        "--output", generatedSourceDir.absolutePath,
+        headerFile.absolutePath
+    )
+}
+
 // -------------- Publishing -----------------------
-val mavenUser: String by project
-val mavenPassword: String by project
+val mavenUser: String? by project
+val mavenPassword: String? by project
 
 publishing {
     publications {
