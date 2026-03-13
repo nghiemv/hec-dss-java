@@ -75,51 +75,32 @@ fun registerNativeTask(name: String, sources: FileCollection, platform: String) 
 }
 
 // -------------- jextract: Generate FFM Bindings -----------------------
-//
-// Currently, the hecdss native zips (e.g. hecdss:7-JA-6-linux-x86_64@zip) only contain the
-// shared library (.so/.dll) without the header file. The downloadHeader task works around this
-// by fetching hecdss.h from the hec-dss GitHub repo's main branch.
-//
-// TODO: When the hec-dss build pipeline is updated to bundle hecdss.h inside the native zips,
-//       switch downloadHeader to extract the header from the native artifact instead:
-//
-//   val headersConfig by configurations.creating
-//   dependencies {
-//       headersConfig("mil.army.usace.hec:hecdss:$hecDssVersion-headers@zip")
-//       // or extract from one of the platform zips if the header is included there:
-//       // headersConfig("mil.army.usace.hec:hecdss:$hecDssVersion-linux-x86_64@zip")
-//   }
-//
-//   tasks.register<Copy>("downloadHeader") {
-//       from(provider { headersConfig.files.map { zipTree(it) } }) {
-//           include("*.h")
-//       }
-//       into(headerFile.parentFile)
-//   }
-//
-//   This would guarantee the header always matches the binary version, eliminating the risk
-//   of main-branch header drift. The hec-dss CMakeLists.txt or CI would need to include
-//   hecdss.h in the published zip or as a separate -headers classifier artifact.
+// The hecdss.h header is pinned to a specific commit in the hec-dss repo.
+// To update, change hecDssGitRef below. Run `./gradlew downloadHeader` to see a clickable link.
 
 val jextractGroup = "code generation"
-val headerFile = file("src/main/native/hecdss.h")
+val hecDssRepo = "HydrologicEngineeringCenter/hec-dss"
+val hecDssHeaderPath = "heclib/hecdss/hecdss.h"
+val hecDssGitRef = project.findProperty("hecdss.gitRef")?.toString() ?: "65801a2291ae832596657ee9766eebd8863f0c42"
+val headerFile = layout.buildDirectory.file("native/hecdss.h").get().asFile
 val generatedSourceDir = file("src/main/java")
 val bindingsPackage = "mil.army.usace.hec.dss.internal"
-val hecDssGitRef = project.findProperty("hecdss.gitRef")?.toString() ?: "main"
 
 tasks.register("downloadHeader") {
     group = jextractGroup
     description = "Download hecdss.h from the hec-dss GitHub repository."
 
+    inputs.property("gitRef", hecDssGitRef)
     outputs.file(headerFile)
 
     doLast {
-        val uri = uri("https://raw.githubusercontent.com/HydrologicEngineeringCenter/hec-dss/$hecDssGitRef/heclib/hecdss/hecdss.h")
+        val uri = uri("https://raw.githubusercontent.com/$hecDssRepo/$hecDssGitRef/$hecDssHeaderPath")
         headerFile.parentFile.mkdirs()
         uri.toURL().openStream().use { input ->
             headerFile.outputStream().use { output -> input.copyTo(output) }
         }
-        println("Downloaded hecdss.h from ref '$hecDssGitRef' to ${headerFile.path}")
+        println("Downloaded $hecDssHeaderPath @ ${hecDssGitRef.take(12)}")
+        println("  https://github.com/$hecDssRepo/blob/$hecDssGitRef/$hecDssHeaderPath")
     }
 }
 
