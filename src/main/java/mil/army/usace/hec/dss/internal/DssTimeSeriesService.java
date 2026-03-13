@@ -4,9 +4,6 @@ import mil.army.usace.hec.dss.DssException;
 import mil.army.usace.hec.dss.DssPathname;
 import mil.army.usace.hec.dss.DssTimeSeries;
 import mil.army.usace.hec.dss.DssTimeWindow;
-import mil.army.usace.hec.dss.internal.natives.ForeignLanguage;
-import mil.army.usace.hec.dss.internal.natives.MemoryAllocator;
-import mil.army.usace.hec.dss.internal.natives.MemoryParser;
 
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
@@ -14,6 +11,8 @@ import java.lang.foreign.ValueLayout;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+
+import static mil.army.usace.hec.dss.internal.hecdss_h$shared.*;
 
 final class DssTimeSeriesService {
     private static final int UNITS_BUFFER_LENGTH = 100;
@@ -32,33 +31,29 @@ final class DssTimeSeriesService {
     }
 
     DssTimeSeries getTimeSeries(DssPathname pathname, DssTimeWindow timeWindow) {
-        Arena memorySession = dssSession.getMemorySession();
-        MemoryAllocator memoryAllocator = MemoryAllocator.create(ForeignLanguage.C, memorySession);
+        Arena arena = dssSession.getMemorySession();
 
         DssTimeArg dssTimeArg = DssTimeArg.from(timeWindow.start(), timeWindow.end());
         int[] numberValuesAndQualityWidth = getTimeSeriesSizes(pathname, dssTimeArg);
         int numberValues = numberValuesAndQualityWidth[0];
         int qualityWidth = numberValuesAndQualityWidth[1];
-        int unitsBufferLength = UNITS_BUFFER_LENGTH;
-        int dataTypeBufferLength = DATA_TYPE_BUFFER_LENGTH;
-        int timeZoneBufferLength = TIMEZONE_BUFFER_LENGTH;
 
         MemorySegment dssPointerInput = dssSession.getDssStackPointer();
-        MemorySegment dssPathnameInput = memoryAllocator.allocateString(pathname.toString());
-        MemorySegment startDateInput = memoryAllocator.allocateString(dssTimeArg.startDate());
-        MemorySegment startTimeInput = memoryAllocator.allocateString(dssTimeArg.startTime());
-        MemorySegment endDateInput = memoryAllocator.allocateString(dssTimeArg.endDate());
-        MemorySegment endTimeInput = memoryAllocator.allocateString(dssTimeArg.endTime());
+        MemorySegment dssPathnameInput = arena.allocateFrom(pathname.toString());
+        MemorySegment startDateInput = arena.allocateFrom(dssTimeArg.startDate());
+        MemorySegment startTimeInput = arena.allocateFrom(dssTimeArg.startTime());
+        MemorySegment endDateInput = arena.allocateFrom(dssTimeArg.endDate());
+        MemorySegment endTimeInput = arena.allocateFrom(dssTimeArg.endTime());
 
-        MemorySegment timeArrayOutput = memoryAllocator.allocateInts(numberValues);
-        MemorySegment valueArrayOutput = memoryAllocator.allocateDoubles(numberValues);
-        MemorySegment numberValuesReadOutput = memoryAllocator.allocateInts(1);
-        MemorySegment qualityOutput = memoryAllocator.allocateInts(numberValues);
-        MemorySegment julianBaseDateOutput = memoryAllocator.allocateInts(1);
-        MemorySegment timeGranularitySecondsOutput = memoryAllocator.allocateInts(1);
-        MemorySegment dataUnitsOutput = memoryAllocator.allocateChars(unitsBufferLength);
-        MemorySegment dataTypeOutput = memoryAllocator.allocateChars(dataTypeBufferLength);
-        MemorySegment timeZoneNameOutput = memoryAllocator.allocateChars(timeZoneBufferLength);
+        MemorySegment timeArrayOutput = arena.allocate(C_INT, numberValues);
+        MemorySegment valueArrayOutput = arena.allocate(C_DOUBLE, numberValues);
+        MemorySegment numberValuesReadOutput = arena.allocate(C_INT, 1);
+        MemorySegment qualityOutput = arena.allocate(C_INT, numberValues);
+        MemorySegment julianBaseDateOutput = arena.allocate(C_INT, 1);
+        MemorySegment timeGranularitySecondsOutput = arena.allocate(C_INT, 1);
+        MemorySegment dataUnitsOutput = arena.allocate(C_CHAR, UNITS_BUFFER_LENGTH);
+        MemorySegment dataTypeOutput = arena.allocate(C_CHAR, DATA_TYPE_BUFFER_LENGTH);
+        MemorySegment timeZoneNameOutput = arena.allocate(C_CHAR, TIMEZONE_BUFFER_LENGTH);
 
         int status = hecdss_h.hec_dss_tsRetrieve(
                 dssPointerInput,
@@ -76,18 +71,18 @@ final class DssTimeSeriesService {
                 julianBaseDateOutput,
                 timeGranularitySecondsOutput,
                 dataUnitsOutput,
-                unitsBufferLength,
+                UNITS_BUFFER_LENGTH,
                 dataTypeOutput,
-                dataTypeBufferLength,
+                DATA_TYPE_BUFFER_LENGTH,
                 timeZoneNameOutput,
-                timeZoneBufferLength
+                TIMEZONE_BUFFER_LENGTH
         );
 
         if (status == 0) {
-            int numberValuesRead = MemoryParser.parseInt(numberValuesReadOutput);
-            int timeGranularitySeconds = MemoryParser.parseInt(timeGranularitySecondsOutput);
-            String dataUnits = MemoryParser.parseString(dataUnitsOutput);
-            String dataType = MemoryParser.parseString(dataTypeOutput);
+            int numberValuesRead = numberValuesReadOutput.get(C_INT, 0);
+            int timeGranularitySeconds = timeGranularitySecondsOutput.get(C_INT, 0);
+            String dataUnits = dataUnitsOutput.getString(0);
+            String dataType = dataTypeOutput.getString(0);
 
             // Zero-copy: slice the native segments to the exact number of values read
             MemorySegment timeSlice = timeArrayOutput.asSlice(0,
@@ -103,17 +98,16 @@ final class DssTimeSeriesService {
     }
 
     private int[] getTimeSeriesSizes(DssPathname dssPathname, DssTimeArg dssTimeArg) {
-        Arena memorySession = dssSession.getMemorySession();
-        MemoryAllocator memoryAllocator = MemoryAllocator.create(ForeignLanguage.C, memorySession);
+        Arena arena = dssSession.getMemorySession();
 
         MemorySegment dssPointer = dssSession.getDssStackPointer();
-        MemorySegment dssPathnameInput = memoryAllocator.allocateString(dssPathname.toString());
-        MemorySegment startDateInput = memoryAllocator.allocateString(dssTimeArg.startDate());
-        MemorySegment startTimeInput = memoryAllocator.allocateString(dssTimeArg.startTime());
-        MemorySegment endDateInput = memoryAllocator.allocateString(dssTimeArg.endDate());
-        MemorySegment endTimeInput = memoryAllocator.allocateString(dssTimeArg.endTime());
-        MemorySegment numberValuesOutput = memoryAllocator.allocateInts(1);
-        MemorySegment qualityWidthOutput = memoryAllocator.allocateInts(1);
+        MemorySegment dssPathnameInput = arena.allocateFrom(dssPathname.toString());
+        MemorySegment startDateInput = arena.allocateFrom(dssTimeArg.startDate());
+        MemorySegment startTimeInput = arena.allocateFrom(dssTimeArg.startTime());
+        MemorySegment endDateInput = arena.allocateFrom(dssTimeArg.endDate());
+        MemorySegment endTimeInput = arena.allocateFrom(dssTimeArg.endTime());
+        MemorySegment numberValuesOutput = arena.allocate(C_INT, 1);
+        MemorySegment qualityWidthOutput = arena.allocate(C_INT, 1);
 
         int status = hecdss_h.hec_dss_tsGetSizes(
                 dssPointer,
@@ -127,8 +121,8 @@ final class DssTimeSeriesService {
         );
 
         if (status == 0) {
-            int numberValues = MemoryParser.parseInt(numberValuesOutput);
-            int qualityWidth = MemoryParser.parseInt(qualityWidthOutput);
+            int numberValues = numberValuesOutput.get(C_INT, 0);
+            int qualityWidth = qualityWidthOutput.get(C_INT, 0);
             return new int[] {numberValues, qualityWidth};
         } else {
             throw new DssException("Failed to retrieve time series size");
@@ -136,16 +130,15 @@ final class DssTimeSeriesService {
     }
 
     private DssTimeWindow getTimeSeriesRange(DssPathname dssPathname) {
-        Arena memorySession = dssSession.getMemorySession();
-        MemoryAllocator memoryAllocator = MemoryAllocator.create(ForeignLanguage.C, memorySession);
+        Arena arena = dssSession.getMemorySession();
 
         MemorySegment dssPointer = dssSession.getDssStackPointer();
-        MemorySegment dssPathnameInput = memoryAllocator.allocateString(dssPathname.toString());
+        MemorySegment dssPathnameInput = arena.allocateFrom(dssPathname.toString());
         int boolFullSet = 1;
-        MemorySegment firstValidJulianOutput = memoryAllocator.allocateInts(1);
-        MemorySegment firstSecondsOutput = memoryAllocator.allocateInts(1);
-        MemorySegment lastValidJulianOutput = memoryAllocator.allocateInts(1);
-        MemorySegment lastSecondsOutput = memoryAllocator.allocateInts(1);
+        MemorySegment firstValidJulianOutput = arena.allocate(C_INT, 1);
+        MemorySegment firstSecondsOutput = arena.allocate(C_INT, 1);
+        MemorySegment lastValidJulianOutput = arena.allocate(C_INT, 1);
+        MemorySegment lastSecondsOutput = arena.allocate(C_INT, 1);
 
         int status = hecdss_h.hec_dss_tsGetDateTimeRange(
                 dssPointer,
@@ -158,12 +151,12 @@ final class DssTimeSeriesService {
         );
 
         if (status == 0) {
-            int firstValidJulian = MemoryParser.parseInt(firstValidJulianOutput);
-            int firstSeconds = MemoryParser.parseInt(firstSecondsOutput);
+            int firstValidJulian = firstValidJulianOutput.get(C_INT, 0);
+            int firstSeconds = firstSecondsOutput.get(C_INT, 0);
             Instant startTime = convertJulianToInstant(firstValidJulian, firstSeconds);
 
-            int lastValidJulian = MemoryParser.parseInt(lastValidJulianOutput);
-            int lastSeconds = MemoryParser.parseInt(lastSecondsOutput);
+            int lastValidJulian = lastValidJulianOutput.get(C_INT, 0);
+            int lastSeconds = lastSecondsOutput.get(C_INT, 0);
             Instant endTime = convertJulianToInstant(lastValidJulian, lastSeconds);
 
             return new DssTimeWindow(startTime, endTime);
@@ -173,12 +166,11 @@ final class DssTimeSeriesService {
     }
 
     private Instant convertJulianToInstant(int julian, int seconds) {
-        Arena memorySession = dssSession.getMemorySession();
-        MemoryAllocator memoryAllocator = MemoryAllocator.create(ForeignLanguage.C, memorySession);
+        Arena arena = dssSession.getMemorySession();
 
-        MemorySegment yearOutput = memoryAllocator.allocateInts(1);
-        MemorySegment monthOutput = memoryAllocator.allocateInts(1);
-        MemorySegment dayOutput = memoryAllocator.allocateInts(1);
+        MemorySegment yearOutput = arena.allocate(C_INT, 1);
+        MemorySegment monthOutput = arena.allocate(C_INT, 1);
+        MemorySegment dayOutput = arena.allocate(C_INT, 1);
 
         hecdss_h.hec_dss_julianToYearMonthDay(
                 julian,
@@ -187,9 +179,9 @@ final class DssTimeSeriesService {
                 dayOutput
         );
 
-        int year = MemoryParser.parseInt(yearOutput);
-        int month = MemoryParser.parseInt(monthOutput);
-        int day = MemoryParser.parseInt(dayOutput);
+        int year = yearOutput.get(C_INT, 0);
+        int month = monthOutput.get(C_INT, 0);
+        int day = dayOutput.get(C_INT, 0);
 
         OffsetDateTime offsetDateTime = OffsetDateTime.of(year, month, day, 0, 0, 0, 0, ZoneOffset.UTC)
                 .plusSeconds(seconds);

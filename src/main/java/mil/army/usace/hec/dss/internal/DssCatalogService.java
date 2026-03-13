@@ -1,14 +1,15 @@
 package mil.army.usace.hec.dss.internal;
 
 import mil.army.usace.hec.dss.DssPathname;
-import mil.army.usace.hec.dss.internal.natives.ForeignLanguage;
-import mil.army.usace.hec.dss.internal.natives.MemoryAllocator;
-import mil.army.usace.hec.dss.internal.natives.MemoryParser;
 
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Optional;
 import java.util.stream.Stream;
+
+import static mil.army.usace.hec.dss.internal.hecdss_h$shared.*;
 
 final class DssCatalogService {
     private static final int MAX_PATHNAME_LENGTH = 1000;
@@ -25,15 +26,14 @@ final class DssCatalogService {
     }
 
     Stream<DssPathname> getCatalog(DssPathname filterPattern) {
-        Arena memorySession = dssSession.getMemorySession();
-        MemoryAllocator memoryAllocator = MemoryAllocator.create(ForeignLanguage.C, memorySession);
+        Arena arena = dssSession.getMemorySession();
 
         int recordCount = getRecordCount();
         int charBufferLength = MAX_PATHNAME_LENGTH * recordCount;
 
-        MemorySegment pathBuffer = memoryAllocator.allocateChars(charBufferLength);
-        MemorySegment recordTypes = memoryAllocator.allocateInts(recordCount);
-        MemorySegment pathFilter = memoryAllocator.allocateString(filterPattern.toString());
+        MemorySegment pathBuffer = arena.allocate(C_CHAR, charBufferLength);
+        MemorySegment recordTypes = arena.allocate(C_INT, recordCount);
+        MemorySegment pathFilter = arena.allocateFrom(filterPattern.toString());
 
         hecdss_h.hec_dss_catalog(
                 dssSession.getDssStackPointer(),
@@ -44,7 +44,7 @@ final class DssCatalogService {
                 MAX_PATHNAME_LENGTH
         );
 
-        return MemoryParser.parseStrings(ForeignLanguage.C, pathBuffer).stream()
+        return parseNullTerminatedStrings(pathBuffer).stream()
                 .map(DssPathname::parse)
                 .filter(Optional::isPresent)
                 .map(Optional::get);
@@ -52,5 +52,12 @@ final class DssCatalogService {
 
     int getRecordCount() {
         return hecdss_h.hec_dss_record_count(dssSession.getDssStackPointer());
+    }
+
+    private static java.util.List<String> parseNullTerminatedStrings(MemorySegment buffer) {
+        String bufferContent = StandardCharsets.ISO_8859_1.decode(buffer.asByteBuffer()).toString();
+        return Arrays.stream(bufferContent.split("\0"))
+                .filter(s -> !s.isBlank())
+                .toList();
     }
 }
