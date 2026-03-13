@@ -30,16 +30,33 @@ public final class TimeSeriesReader {
         Arena arena = session.arena();
         NativeDateFormat time = NativeDateFormat.from(timeWindow.start(), timeWindow.end());
 
-        int[] sizes = readSizes(session, pathname, time);
-        int numberValues = sizes[0];
-        int qualityWidth = sizes[1];
-
+        // Allocate date/time strings once — reused for both sizing and retrieval calls
         MemorySegment pathnameInput = arena.allocateFrom(pathname.toString());
         MemorySegment startDateInput = arena.allocateFrom(time.startDate());
         MemorySegment startTimeInput = arena.allocateFrom(time.startTime());
         MemorySegment endDateInput = arena.allocateFrom(time.endDate());
         MemorySegment endTimeInput = arena.allocateFrom(time.endTime());
 
+        // Get sizes
+        MemorySegment numberValuesOutput = arena.allocate(C_INT, 1);
+        MemorySegment qualityWidthOutput = arena.allocate(C_INT, 1);
+
+        int status = hecdss_h.hec_dss_tsGetSizes(
+                session.dssPointer(), pathnameInput,
+                startDateInput, startTimeInput, endDateInput, endTimeInput,
+                numberValuesOutput, qualityWidthOutput
+        );
+
+        if (status != 0) {
+            throw new DssException(
+                    "Failed to get time series sizes for '%s' from '%s': native status code %d"
+                            .formatted(pathname, session.filePath(), status));
+        }
+
+        int numberValues = numberValuesOutput.get(C_INT, 0);
+        int qualityWidth = qualityWidthOutput.get(C_INT, 0);
+
+        // Retrieve data
         MemorySegment timeArrayOutput = arena.allocate(C_INT, numberValues);
         MemorySegment valueArrayOutput = arena.allocate(C_DOUBLE, numberValues);
         MemorySegment numberValuesReadOutput = arena.allocate(C_INT, 1);
@@ -50,7 +67,7 @@ public final class TimeSeriesReader {
         MemorySegment typeOutput = arena.allocate(C_CHAR, STRING_BUFFER_LENGTH);
         MemorySegment timezoneOutput = arena.allocate(C_CHAR, STRING_BUFFER_LENGTH);
 
-        int status = hecdss_h.hec_dss_tsRetrieve(
+        status = hecdss_h.hec_dss_tsRetrieve(
                 session.dssPointer(), pathnameInput,
                 startDateInput, startTimeInput, endDateInput, endTimeInput,
                 timeArrayOutput, valueArrayOutput, numberValues,
@@ -86,36 +103,6 @@ public final class TimeSeriesReader {
         }
 
         return new DssTimeSeries(values, epochSeconds, units, type);
-    }
-
-    private static int[] readSizes(DssSession session, DssPathname pathname,
-                                   NativeDateFormat time) {
-        Arena arena = session.arena();
-
-        MemorySegment pathnameInput = arena.allocateFrom(pathname.toString());
-        MemorySegment startDateInput = arena.allocateFrom(time.startDate());
-        MemorySegment startTimeInput = arena.allocateFrom(time.startTime());
-        MemorySegment endDateInput = arena.allocateFrom(time.endDate());
-        MemorySegment endTimeInput = arena.allocateFrom(time.endTime());
-        MemorySegment numberValuesOutput = arena.allocate(C_INT, 1);
-        MemorySegment qualityWidthOutput = arena.allocate(C_INT, 1);
-
-        int status = hecdss_h.hec_dss_tsGetSizes(
-                session.dssPointer(), pathnameInput,
-                startDateInput, startTimeInput, endDateInput, endTimeInput,
-                numberValuesOutput, qualityWidthOutput
-        );
-
-        if (status != 0) {
-            throw new DssException(
-                    "Failed to get time series sizes for '%s' from '%s': native status code %d"
-                            .formatted(pathname, session.filePath(), status));
-        }
-
-        return new int[]{
-                numberValuesOutput.get(C_INT, 0),
-                qualityWidthOutput.get(C_INT, 0)
-        };
     }
 
     private static DssTimeWindow readRange(DssSession session, DssPathname pathname) {

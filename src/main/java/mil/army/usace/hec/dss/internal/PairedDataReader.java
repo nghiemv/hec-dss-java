@@ -49,16 +49,12 @@ public final class PairedDataReader {
         int numberCurves = numberCurvesOutput.get(C_INT, 0);
         int labelsLength = labelsLengthOutput.get(C_INT, 0);
 
-        // Now retrieve the data
+        // Now retrieve the data — reuse string buffers from info call
         MemorySegment ordinatesOutput = arena.allocate(C_DOUBLE, numberOrdinates);
         int valuesSize = numberOrdinates * numberCurves;
         MemorySegment valuesOutput = arena.allocate(C_DOUBLE, valuesSize);
         MemorySegment numberOrdinatesRead = arena.allocate(C_INT, 1);
         MemorySegment numberCurvesRead = arena.allocate(C_INT, 1);
-        MemorySegment xUnits2 = arena.allocate(C_CHAR, STRING_BUFFER_LENGTH);
-        MemorySegment xType2 = arena.allocate(C_CHAR, STRING_BUFFER_LENGTH);
-        MemorySegment yUnits2 = arena.allocate(C_CHAR, STRING_BUFFER_LENGTH);
-        MemorySegment yType2 = arena.allocate(C_CHAR, STRING_BUFFER_LENGTH);
         int actualLabelsLen = Math.max(labelsLength, 1);
         MemorySegment labelsOutput = arena.allocate(C_CHAR, actualLabelsLen);
         MemorySegment timezoneOutput = arena.allocate(C_CHAR, STRING_BUFFER_LENGTH);
@@ -68,10 +64,10 @@ public final class PairedDataReader {
                 ordinatesOutput, numberOrdinates,
                 valuesOutput, valuesSize,
                 numberOrdinatesRead, numberCurvesRead,
-                xUnits2, STRING_BUFFER_LENGTH,
-                xType2, STRING_BUFFER_LENGTH,
-                yUnits2, STRING_BUFFER_LENGTH,
-                yType2, STRING_BUFFER_LENGTH,
+                xUnitsOutput, STRING_BUFFER_LENGTH,
+                xTypeOutput, STRING_BUFFER_LENGTH,
+                yUnitsOutput, STRING_BUFFER_LENGTH,
+                yTypeOutput, STRING_BUFFER_LENGTH,
                 labelsOutput, actualLabelsLen,
                 timezoneOutput, STRING_BUFFER_LENGTH
         );
@@ -89,10 +85,10 @@ public final class PairedDataReader {
                 (long) valuesSize * ValueLayout.JAVA_DOUBLE.byteSize())
                 .toArray(ValueLayout.JAVA_DOUBLE);
         String[] labels = parseLabels(labelsOutput, actualLabelsLen, numberCurves);
-        String xUnits = xUnits2.getString(0);
-        String yUnits = yUnits2.getString(0);
-        String xType = xType2.getString(0);
-        String yType = yType2.getString(0);
+        String xUnits = xUnitsOutput.getString(0);
+        String yUnits = yUnitsOutput.getString(0);
+        String xType = xTypeOutput.getString(0);
+        String yType = yTypeOutput.getString(0);
 
         return new DssPairedData(ordinates, values, numberCurves, labels,
                 xUnits, yUnits, xType, yType);

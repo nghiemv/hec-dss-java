@@ -16,9 +16,11 @@ public final class PairedDataWriter {
     public static void write(DssSession session, DssPathname pathname, DssPairedData data) {
         Arena arena = session.arena();
 
+        double[] ordinates = data.ordinates();
+        double[] values = data.values();
         MemorySegment pathnameInput = arena.allocateFrom(pathname.toString());
-        MemorySegment ordinatesInput = NativeBuffers.allocateDoubles(arena, data.ordinates());
-        MemorySegment valuesInput = NativeBuffers.allocateDoubles(arena, data.values());
+        MemorySegment ordinatesInput = NativeBuffers.allocateDoubles(arena, ordinates);
+        MemorySegment valuesInput = NativeBuffers.allocateDoubles(arena, values);
         MemorySegment xUnitsInput = arena.allocateFrom(data.xUnits());
         MemorySegment xTypeInput = arena.allocateFrom(data.xType());
         MemorySegment yUnitsInput = arena.allocateFrom(data.yUnits());
@@ -39,7 +41,7 @@ public final class PairedDataWriter {
         int status = hecdss_h.hec_dss_pdStore(
                 session.dssPointer(), pathnameInput,
                 ordinatesInput, data.numberOrdinates(),
-                valuesInput, data.values().length,
+                valuesInput, values.length,
                 data.numberOrdinates(), data.numberCurves(),
                 xUnitsInput, xTypeInput, yUnitsInput, yTypeInput,
                 labelsInput, labelBytes.length,

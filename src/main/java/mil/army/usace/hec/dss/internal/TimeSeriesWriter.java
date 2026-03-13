@@ -31,13 +31,14 @@ public final class TimeSeriesWriter {
 
         Arena arena = session.arena();
 
-        Instant startInstant = Instant.ofEpochSecond(data.epochSeconds()[0]);
+        Instant startInstant = Instant.ofEpochSecond(data.epochSecond(0));
         NativeDateFormat time = NativeDateFormat.from(startInstant, startInstant);
 
+        double[] values = data.values();
         MemorySegment pathnameInput = arena.allocateFrom(pathname.toString());
         MemorySegment startDateInput = arena.allocateFrom(time.startDate());
         MemorySegment startTimeInput = arena.allocateFrom(time.startTime());
-        MemorySegment valueArray = NativeBuffers.allocateDoubles(arena, data.values());
+        MemorySegment valueArray = NativeBuffers.allocateDoubles(arena, values);
         MemorySegment qualityArray = arena.allocate(C_INT, data.size());
         MemorySegment unitsInput = arena.allocateFrom(data.units());
         MemorySegment typeInput = arena.allocateFrom(data.type());
@@ -67,7 +68,8 @@ public final class TimeSeriesWriter {
         int granularity = 60; // seconds per unit — minutes is the standard for irregular
 
         // Compute base date (julian days since DSS epoch) from first value
-        long firstEpoch = data.epochSeconds()[0];
+        long[] epochs = data.epochSeconds();
+        long firstEpoch = epochs[0];
         long baseDaysSinceEpoch = (firstEpoch - DssConstants.BASE_EPOCH_SECONDS) / 86400;
         long baseEpochSeconds = DssConstants.BASE_EPOCH_SECONDS + baseDaysSinceEpoch * 86400;
 
@@ -78,7 +80,7 @@ public final class TimeSeriesWriter {
         // Compute time offsets in granularity units from base
         int[] timeOffsets = new int[data.size()];
         for (int i = 0; i < data.size(); i++) {
-            timeOffsets[i] = (int) ((data.epochSeconds()[i] - baseEpochSeconds) / granularity);
+            timeOffsets[i] = (int) ((epochs[i] - baseEpochSeconds) / granularity);
         }
 
         MemorySegment pathnameInput = arena.allocateFrom(pathname.toString());

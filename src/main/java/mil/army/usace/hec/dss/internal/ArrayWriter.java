@@ -15,15 +15,18 @@ public final class ArrayWriter {
 
         MemorySegment pathnameInput = arena.allocateFrom(pathname.toString());
 
-        MemorySegment intInput = NativeBuffers.allocateInts(arena, data.intValues());
-        MemorySegment floatInput = NativeBuffers.allocateFloats(arena, data.floatValues());
-        MemorySegment doubleInput = NativeBuffers.allocateDoubles(arena, data.doubleValues());
+        int[] ints = data.intValues();
+        float[] floats = data.floatValues();
+        double[] doubles = data.doubleValues();
+        MemorySegment intInput = NativeBuffers.allocateInts(arena, ints);
+        MemorySegment floatInput = NativeBuffers.allocateFloats(arena, floats);
+        MemorySegment doubleInput = NativeBuffers.allocateDoubles(arena, doubles);
 
         int status = hecdss_h.hec_dss_arrayStore(
                 session.dssPointer(), pathnameInput,
-                intInput, data.intValues().length,
-                floatInput, data.floatValues().length,
-                doubleInput, data.doubleValues().length
+                intInput, ints.length,
+                floatInput, floats.length,
+                doubleInput, doubles.length
         );
 
         if (status != 0) {
