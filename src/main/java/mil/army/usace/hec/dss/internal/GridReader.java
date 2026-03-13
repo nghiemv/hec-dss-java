@@ -140,19 +140,20 @@ public final class GridReader {
         }
 
         return new DssGrid(data,
-                typeOutput.get(C_INT, 0), dataTypeOutput.get(C_INT, 0),
+                GridType.fromCode(typeOutput.get(C_INT, 0)),
+                GridDataType.fromCode(dataTypeOutput.get(C_INT, 0)),
                 lowerLeftCellXOutput.get(C_INT, 0), lowerLeftCellYOutput.get(C_INT, 0),
-                cellsX, cellsY, numRanges,
+                cellsX, cellsY,
                 cellSizeOutput.get(C_FLOAT, 0),
                 xCoordOutput.get(C_FLOAT, 0), yCoordOutput.get(C_FLOAT, 0),
                 isIntervalOutput.get(C_INT, 0) != 0,
                 isTimeStampedOutput.get(C_INT, 0) != 0,
-                timeZoneIDOutput.getString(0), timeZoneRawOffsetOutput.get(C_INT, 0),
+                timeZoneIDOutput.getString(0),
                 srsNameOutput.getString(0), srsDefinitionOutput.getString(0),
                 srsDefinitionTypeOutput.get(C_INT, 0),
                 maxDataValueOutput.get(C_FLOAT, 0), minDataValueOutput.get(C_FLOAT, 0),
                 meanDataValueOutput.get(C_FLOAT, 0),
-                rangeTable, rangeExceedance
+                new DssGrid.RangeHistogram(rangeTable, rangeExceedance)
         );
     }
 }

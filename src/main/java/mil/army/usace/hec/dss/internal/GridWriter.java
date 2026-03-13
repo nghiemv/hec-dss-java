@@ -22,10 +22,11 @@ public final class GridWriter {
             nativeData[i] = Double.isNaN(doubleData[i]) ? NULL_SENTINEL : (float) doubleData[i];
         }
 
-        double[] doubleRangeTable = grid.rangeLimitTable();
-        float[] nativeRangeTable = new float[doubleRangeTable.length];
-        for (int i = 0; i < doubleRangeTable.length; i++) {
-            nativeRangeTable[i] = (float) doubleRangeTable[i];
+        DssGrid.RangeHistogram histogram = grid.rangeHistogram();
+        double[] doubleLimits = histogram.limits();
+        float[] nativeRangeTable = new float[doubleLimits.length];
+        for (int i = 0; i < doubleLimits.length; i++) {
+            nativeRangeTable[i] = (float) doubleLimits[i];
         }
 
         MemorySegment pathnameInput = arena.allocateFrom(pathname.toString());
@@ -36,17 +37,17 @@ public final class GridWriter {
         MemorySegment timeZoneIdInput = arena.allocateFrom(grid.timeZoneId());
 
         MemorySegment rangeLimitInput = NativeBuffers.allocateFloats(arena, nativeRangeTable);
-        MemorySegment rangeExceedInput = NativeBuffers.allocateInts(arena, grid.numberEqualOrExceedingRangeLimit());
+        MemorySegment rangeExceedInput = NativeBuffers.allocateInts(arena, histogram.exceedanceCounts());
         MemorySegment dataInput = NativeBuffers.allocateFloats(arena, nativeData);
 
         int status = hecdss_h.hec_dss_gridStore(
                 session.dssPointer(), pathnameInput,
-                grid.gridType(), grid.dataType(),
+                grid.gridType().code(), grid.dataType().code(),
                 grid.lowerLeftCellX(), grid.lowerLeftCellY(),
                 grid.numberOfCellsX(), grid.numberOfCellsY(),
-                grid.numberOfRanges(),
+                histogram.size(),
                 grid.srsDefinitionType(),
-                grid.timeZoneRawOffset(),
+                0, // timeZoneRawOffset — computed by native library
                 grid.isInterval() ? 1 : 0,
                 grid.isTimeStamped() ? 1 : 0,
                 0, // compressionSize

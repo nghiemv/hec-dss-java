@@ -22,9 +22,9 @@ public final class LocationInfoWriter {
         int status = hecdss_h.hec_dss_locationStore(
                 session.dssPointer(), pathnameInput,
                 info.x(), info.y(), info.z(),
-                info.coordinateSystem(), info.coordinateId(),
-                info.horizontalUnits(), info.horizontalDatum(),
-                info.verticalUnits(), info.verticalDatum(),
+                info.coordinateSystem().code(), info.coordinateId(),
+                info.horizontalUnits().code(), info.horizontalDatum().code(),
+                info.verticalUnits().code(), info.verticalDatum().code(),
                 timezoneInput, supplementalInput,
                 1  // replace = true
         );

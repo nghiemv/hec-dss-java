@@ -7,12 +7,17 @@ import java.util.Objects;
  */
 public record DssLocationInfo(
         double x, double y, double z,
-        int coordinateSystem, int coordinateId,
-        int horizontalUnits, int horizontalDatum,
-        int verticalUnits, int verticalDatum,
+        CoordinateSystem coordinateSystem, int coordinateId,
+        LengthUnit horizontalUnits, HorizontalDatum horizontalDatum,
+        LengthUnit verticalUnits, VerticalDatum verticalDatum,
         String timeZoneName, String supplemental
 ) {
     public DssLocationInfo {
+        Objects.requireNonNull(coordinateSystem);
+        Objects.requireNonNull(horizontalUnits);
+        Objects.requireNonNull(horizontalDatum);
+        Objects.requireNonNull(verticalUnits);
+        Objects.requireNonNull(verticalDatum);
         Objects.requireNonNull(timeZoneName);
         Objects.requireNonNull(supplemental);
     }
@@ -23,9 +28,9 @@ public record DssLocationInfo(
     public static DssLocationInfo of(double latitude, double longitude, double elevation, String timeZone) {
         return new DssLocationInfo(
                 longitude, latitude, elevation,
-                2, 0,  // coordinateSystem=geographic, coordinateId=0
-                3, 2,  // horizontalUnits=degrees, horizontalDatum=WGS84
-                1, 1,  // verticalUnits=meters, verticalDatum=NAVD88
+                CoordinateSystem.GEOGRAPHIC, 0,
+                LengthUnit.DEGREES, HorizontalDatum.WGS84,
+                LengthUnit.METERS, VerticalDatum.NAVD88,
                 timeZone, ""
         );
     }

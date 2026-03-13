@@ -19,20 +19,18 @@ public final class DssGrid {
     private final double[] data;
 
     // Grid info
-    private final int gridType;
-    private final int dataType;
+    private final GridType gridType;
+    private final GridDataType dataType;
     private final int lowerLeftCellX;
     private final int lowerLeftCellY;
     private final int numberOfCellsX;
     private final int numberOfCellsY;
-    private final int numberOfRanges;
     private final double cellSize;
     private final double xCoordOfGridCellZero;
     private final double yCoordOfGridCellZero;
     private final boolean isInterval;
     private final boolean isTimeStamped;
     private final String timeZoneId;
-    private final int timeZoneRawOffset;
 
     // Spatial reference
     private final String srsName;
@@ -43,43 +41,55 @@ public final class DssGrid {
     private final double maxDataValue;
     private final double minDataValue;
     private final double meanDataValue;
-    private final double[] rangeLimitTable;
-    private final int[] numberEqualOrExceedingRangeLimit;
+    private final RangeHistogram rangeHistogram;
+
+    /**
+     * Histogram of cell values used by the native DSS library for compression.
+     */
+    public record RangeHistogram(double[] limits, int[] exceedanceCounts) {
+        public static final RangeHistogram EMPTY = new RangeHistogram(new double[0], new int[0]);
+
+        public RangeHistogram {
+            limits = Objects.requireNonNull(limits).clone();
+            exceedanceCounts = Objects.requireNonNull(exceedanceCounts).clone();
+        }
+
+        @Override public double[] limits() { return limits.clone(); }
+        @Override public int[] exceedanceCounts() { return exceedanceCounts.clone(); }
+
+        public int size() { return limits.length; }
+    }
 
     public DssGrid(double[] data,
-                   int gridType, int dataType,
+                   GridType gridType, GridDataType dataType,
                    int lowerLeftCellX, int lowerLeftCellY,
                    int numberOfCellsX, int numberOfCellsY,
-                   int numberOfRanges,
                    double cellSize, double xCoordOfGridCellZero, double yCoordOfGridCellZero,
                    boolean isInterval, boolean isTimeStamped,
-                   String timeZoneId, int timeZoneRawOffset,
+                   String timeZoneId,
                    String srsName, String srsDefinition, int srsDefinitionType,
                    double maxDataValue, double minDataValue, double meanDataValue,
-                   double[] rangeLimitTable, int[] numberEqualOrExceedingRangeLimit) {
+                   RangeHistogram rangeHistogram) {
         this.data = Objects.requireNonNull(data).clone();
-        this.gridType = gridType;
-        this.dataType = dataType;
+        this.gridType = Objects.requireNonNull(gridType);
+        this.dataType = Objects.requireNonNull(dataType);
         this.lowerLeftCellX = lowerLeftCellX;
         this.lowerLeftCellY = lowerLeftCellY;
         this.numberOfCellsX = numberOfCellsX;
         this.numberOfCellsY = numberOfCellsY;
-        this.numberOfRanges = numberOfRanges;
         this.cellSize = cellSize;
         this.xCoordOfGridCellZero = xCoordOfGridCellZero;
         this.yCoordOfGridCellZero = yCoordOfGridCellZero;
         this.isInterval = isInterval;
         this.isTimeStamped = isTimeStamped;
         this.timeZoneId = Objects.requireNonNull(timeZoneId);
-        this.timeZoneRawOffset = timeZoneRawOffset;
         this.srsName = Objects.requireNonNull(srsName);
         this.srsDefinition = Objects.requireNonNull(srsDefinition);
         this.srsDefinitionType = srsDefinitionType;
         this.maxDataValue = maxDataValue;
         this.minDataValue = minDataValue;
         this.meanDataValue = meanDataValue;
-        this.rangeLimitTable = Objects.requireNonNull(rangeLimitTable).clone();
-        this.numberEqualOrExceedingRangeLimit = Objects.requireNonNull(numberEqualOrExceedingRangeLimit).clone();
+        this.rangeHistogram = Objects.requireNonNull(rangeHistogram);
     }
 
     /**
@@ -103,11 +113,11 @@ public final class DssGrid {
         if (count == 0) { min = 0; max = 0; }
 
         return new DssGrid(data,
-                420, 0, 0, 0, cellsX, cellsY, 0,
-                cellSize, xOrigin, yOrigin, false, false, "", 0,
+                GridType.ALBERS, GridDataType.PER_AVER, 0, 0, cellsX, cellsY,
+                cellSize, xOrigin, yOrigin, false, false, "",
                 "", "", 0,
                 max, min, mean,
-                new double[0], new int[0]);
+                RangeHistogram.EMPTY);
     }
 
     /**
@@ -115,12 +125,12 @@ public final class DssGrid {
      */
     public DssGrid withSrs(String name, String wktDefinition) {
         return new DssGrid(data, gridType, dataType,
-                lowerLeftCellX, lowerLeftCellY, numberOfCellsX, numberOfCellsY, numberOfRanges,
+                lowerLeftCellX, lowerLeftCellY, numberOfCellsX, numberOfCellsY,
                 cellSize, xCoordOfGridCellZero, yCoordOfGridCellZero, isInterval, isTimeStamped,
-                timeZoneId, timeZoneRawOffset,
+                timeZoneId,
                 name, wktDefinition, 0,
                 maxDataValue, minDataValue, meanDataValue,
-                rangeLimitTable, numberEqualOrExceedingRangeLimit);
+                rangeHistogram);
     }
 
     /**
@@ -128,32 +138,30 @@ public final class DssGrid {
      */
     public DssGrid withTimeZone(String timeZoneId) {
         return new DssGrid(data, gridType, dataType,
-                lowerLeftCellX, lowerLeftCellY, numberOfCellsX, numberOfCellsY, numberOfRanges,
+                lowerLeftCellX, lowerLeftCellY, numberOfCellsX, numberOfCellsY,
                 cellSize, xCoordOfGridCellZero, yCoordOfGridCellZero, isInterval, isTimeStamped,
-                timeZoneId, timeZoneRawOffset,
+                timeZoneId,
                 srsName, srsDefinition, srsDefinitionType,
                 maxDataValue, minDataValue, meanDataValue,
-                rangeLimitTable, numberEqualOrExceedingRangeLimit);
+                rangeHistogram);
     }
 
     // Data
     public double[] data() { return data.clone(); }
 
     // Grid info
-    public int gridType() { return gridType; }
-    public int dataType() { return dataType; }
+    public GridType gridType() { return gridType; }
+    public GridDataType dataType() { return dataType; }
     public int lowerLeftCellX() { return lowerLeftCellX; }
     public int lowerLeftCellY() { return lowerLeftCellY; }
     public int numberOfCellsX() { return numberOfCellsX; }
     public int numberOfCellsY() { return numberOfCellsY; }
-    public int numberOfRanges() { return numberOfRanges; }
     public double cellSize() { return cellSize; }
     public double xCoordOfGridCellZero() { return xCoordOfGridCellZero; }
     public double yCoordOfGridCellZero() { return yCoordOfGridCellZero; }
     public boolean isInterval() { return isInterval; }
     public boolean isTimeStamped() { return isTimeStamped; }
     public String timeZoneId() { return timeZoneId; }
-    public int timeZoneRawOffset() { return timeZoneRawOffset; }
 
     // Spatial reference
     public String srsName() { return srsName; }
@@ -164,6 +172,5 @@ public final class DssGrid {
     public double maxDataValue() { return maxDataValue; }
     public double minDataValue() { return minDataValue; }
     public double meanDataValue() { return meanDataValue; }
-    public double[] rangeLimitTable() { return rangeLimitTable.clone(); }
-    public int[] numberEqualOrExceedingRangeLimit() { return numberEqualOrExceedingRangeLimit.clone(); }
+    public RangeHistogram rangeHistogram() { return rangeHistogram; }
 }
