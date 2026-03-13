@@ -81,7 +81,7 @@ public final class PairedDataReader {
         double[] ordinates = ordinatesOutput.asSlice(0,
                 (long) numberOrdinates * ValueLayout.JAVA_DOUBLE.byteSize())
                 .toArray(ValueLayout.JAVA_DOUBLE);
-        double[] values = valuesOutput.asSlice(0,
+        double[] flatValues = valuesOutput.asSlice(0,
                 (long) valuesSize * ValueLayout.JAVA_DOUBLE.byteSize())
                 .toArray(ValueLayout.JAVA_DOUBLE);
         String[] labels = parseLabels(labelsOutput, actualLabelsLen, numberCurves);
@@ -90,7 +90,15 @@ public final class PairedDataReader {
         String xType = xTypeOutput.getString(0);
         String yType = yTypeOutput.getString(0);
 
-        return new DssPairedData(ordinates, values, numberCurves, labels,
+        // Convert column-major flat array to per-curve arrays
+        double[][] curves = new double[numberCurves][numberOrdinates];
+        for (int i = 0; i < numberOrdinates; i++) {
+            for (int c = 0; c < numberCurves; c++) {
+                curves[c][i] = flatValues[i * numberCurves + c];
+            }
+        }
+
+        return new DssPairedData(ordinates, curves, labels,
                 xUnits, yUnits, xType, yType);
     }
 

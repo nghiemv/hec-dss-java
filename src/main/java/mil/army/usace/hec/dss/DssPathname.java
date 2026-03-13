@@ -63,10 +63,6 @@ public record DssPathname(String aPart, String bPart, String cPart, String dPart
         }
     }
 
-    public static DssPathname matchAllPattern() {
-        return new DssPathname("*", "*", "*", "*", "*", "*");
-    }
-
     /**
      * Checks if a string represents a valid DSS pathname.
      */
@@ -169,16 +165,6 @@ public record DssPathname(String aPart, String bPart, String cPart, String dPart
     public boolean isPattern() {
         return WILDCARD.equals(aPart) || WILDCARD.equals(bPart) || WILDCARD.equals(cPart)
                 || WILDCARD.equals(dPart) || WILDCARD.equals(ePart) || WILDCARD.equals(fPart);
-    }
-
-    /**
-     * Checks if the record-identifying parts (A, B, C, E, F) contain wildcards.
-     * D-part (date window) is excluded — wildcards there mean "all dates" and are valid
-     * for record retrieval.
-     */
-    public boolean hasWildcardRecordParts() {
-        return WILDCARD.equals(aPart) || WILDCARD.equals(bPart) || WILDCARD.equals(cPart)
-                || WILDCARD.equals(ePart) || WILDCARD.equals(fPart);
     }
 
     /**

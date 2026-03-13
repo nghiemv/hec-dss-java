@@ -16,7 +16,7 @@ public final class CatalogReader {
     private CatalogReader() {}
 
     public static List<DssPathname> read(DssSession session) {
-        return read(session, DssPathname.matchAllPattern());
+        return read(session, new DssPathname("*", "*", "*", "*", "*", "*"));
     }
 
     public static List<DssPathname> read(DssSession session, DssPathname filter) {

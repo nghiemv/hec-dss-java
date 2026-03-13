@@ -212,7 +212,8 @@ public final class HecDss {
         DssPathname parsed = DssPathname.parse(pathname)
                 .orElseThrow(() -> new DssException(
                         "Invalid DSS pathname format '%s': expected /A/B/C/D/E/F/".formatted(pathname)));
-        if (parsed.hasWildcardRecordParts()) {
+        if ("*".equals(parsed.aPart()) || "*".equals(parsed.bPart()) || "*".equals(parsed.cPart())
+                || "*".equals(parsed.ePart()) || "*".equals(parsed.fPart())) {
             throw new DssException(
                     "Pathname '%s' contains wildcards in record-identifying parts (A, B, C, E, or F)"
                             .formatted(pathname));

@@ -21,12 +21,12 @@ class HecDssWriteTest {
 
         Instant start = ZonedDateTime.parse("2020-01-01T00:00:00Z").toInstant();
         double[] values = {100.0, 200.0, 300.0, 400.0, 500.0};
-        long[] times = new long[5];
+        Instant[] times = new Instant[5];
         for (int i = 0; i < 5; i++) {
-            times[i] = start.getEpochSecond() + i * 3600;
+            times[i] = Instant.ofEpochSecond(start.getEpochSecond() + i * 3600);
         }
 
-        DssTimeSeries input = new DssTimeSeries(values, times, "CFS", "INST-VAL");
+        DssTimeSeries input = new DssTimeSeries(times, values, "CFS", "INST-VAL");
         HecDss.writeTimeSeries(dssFile, pathname, input);
 
         DssTimeSeries output = HecDss.readTimeSeries(dssFile, pathname);
@@ -71,7 +71,7 @@ class HecDssWriteTest {
         // Modify values
         double[] modifiedValues = original.values().clone();
         modifiedValues[3] = 75.0;
-        DssTimeSeries modified = new DssTimeSeries(modifiedValues, original.epochSeconds(), "FEET", original.type());
+        DssTimeSeries modified = new DssTimeSeries(original.times(), modifiedValues, "FEET", original.type());
 
         String writePath = "/regular-time-series/GAPT/FLOW/01Oct2021/6Hour/test-modified/";
         HecDss.writeTimeSeries(dssFile, writePath, modified);
@@ -90,13 +90,13 @@ class HecDssWriteTest {
         String pathname = "/TEST/LOCATION/FLOW-PEAK/01Jan1990/IR-Century/WRITE-TEST/";
 
         double[] values = {1500.0, 2300.0, 1800.0};
-        long[] times = {
-                ZonedDateTime.parse("1995-03-15T12:00:00Z").toInstant().getEpochSecond(),
-                ZonedDateTime.parse("2001-06-20T08:00:00Z").toInstant().getEpochSecond(),
-                ZonedDateTime.parse("2010-11-05T16:00:00Z").toInstant().getEpochSecond()
+        Instant[] times = {
+                ZonedDateTime.parse("1995-03-15T12:00:00Z").toInstant(),
+                ZonedDateTime.parse("2001-06-20T08:00:00Z").toInstant(),
+                ZonedDateTime.parse("2010-11-05T16:00:00Z").toInstant()
         };
 
-        DssTimeSeries input = new DssTimeSeries(values, times, "CFS", "INST-VAL");
+        DssTimeSeries input = new DssTimeSeries(times, values, "CFS", "INST-VAL");
         HecDss.writeTimeSeries(dssFile, pathname, input);
 
         DssTimeSeries output = HecDss.readTimeSeries(dssFile, pathname);
@@ -133,7 +133,7 @@ class HecDssWriteTest {
 
         double[] modifiedValues = original.values().clone();
         modifiedValues[3] = 75.0;
-        DssTimeSeries modified = new DssTimeSeries(modifiedValues, original.epochSeconds(), "FEET", original.type());
+        DssTimeSeries modified = new DssTimeSeries(original.times(), modifiedValues, "FEET", original.type());
 
         String writePath = "/irregular-time-series/FAIR OAKS CA/FLOW-ANNUAL PEAK/01Jan1900/IR-Century/USGS-modified/";
         HecDss.writeTimeSeries(dssFile, writePath, modified);
@@ -153,10 +153,8 @@ class HecDssWriteTest {
 
         double[] ordinates = {0.0, 1.0, 2.0, 3.0, 4.0};
         double[] values = {0.0, 10.0, 50.0, 150.0, 300.0};
-        DssPairedData input = new DssPairedData(
-                ordinates, values, 1, new String[]{"Rating Curve"},
-                "FEET", "CFS", "Stage", "Flow"
-        );
+        DssPairedData input = DssPairedData.of(ordinates, values,
+                "FEET", "CFS", "Stage", "Flow");
 
         HecDss.writePairedData(dssFile, pathname, input);
 
@@ -164,7 +162,7 @@ class HecDssWriteTest {
         assertEquals(5, output.numberOrdinates());
         assertEquals(1, output.numberCurves());
         assertArrayEquals(ordinates, output.ordinates());
-        assertArrayEquals(values, output.values());
+        assertArrayEquals(values, output.curve(0));
         assertEquals("FEET", output.xUnits());
         assertEquals("CFS", output.yUnits());
     }
@@ -193,7 +191,7 @@ class HecDssWriteTest {
 
         DssPairedData reread = HecDss.readPairedData(dssFile, writePath);
         assertArrayEquals(original.ordinates(), reread.ordinates());
-        assertArrayEquals(original.values(), reread.values());
+        assertArrayEquals(original.curve(0), reread.curve(0));
         assertEquals(original.xUnits(), reread.xUnits());
         assertEquals(original.yUnits(), reread.yUnits());
     }
@@ -204,16 +202,15 @@ class HecDssWriteTest {
         String pathname = "/TEST/LOCATION/STAGE-FLOW///MULTI-CURVE/";
 
         double[] ordinates = {0.0, 11.0, 22.0, 33.0, 44.0};
-        // 3 curves: column-major layout = ordinates * curves
-        double[] values = new double[ordinates.length * 3];
-        for (int i = 0; i < ordinates.length; i++) {
-            for (int c = 0; c < 3; c++) {
-                values[i * 3 + c] = ordinates[i] + c;
+        double[][] curves = new double[3][ordinates.length];
+        for (int c = 0; c < 3; c++) {
+            for (int i = 0; i < ordinates.length; i++) {
+                curves[c][i] = ordinates[i] + c;
             }
         }
         String[] labels = {"x plus 0", "x plus 1", "x plus 2"};
         DssPairedData input = new DssPairedData(
-                ordinates, values, 3, labels,
+                ordinates, curves, labels,
                 "cm", "CFS", "Stage", "Flow"
         );
 
@@ -223,7 +220,9 @@ class HecDssWriteTest {
         assertEquals(5, output.numberOrdinates());
         assertEquals(3, output.numberCurves());
         assertArrayEquals(ordinates, output.ordinates());
-        assertArrayEquals(values, output.values());
+        for (int c = 0; c < 3; c++) {
+            assertArrayEquals(curves[c], output.curve(c));
+        }
     }
 
     @Test
@@ -245,11 +244,17 @@ class HecDssWriteTest {
 
         DssPairedData original = HecDss.readPairedData(dssFile, readPath);
 
+        // Reconstruct curves from original
+        double[][] curves = new double[original.numberCurves()][];
+        for (int c = 0; c < original.numberCurves(); c++) {
+            curves[c] = original.curve(c);
+        }
+
         // Modify a label
         String[] newLabels = original.labels().clone();
         newLabels[Math.min(3, newLabels.length - 1)] = "New Label";
         DssPairedData modified = new DssPairedData(
-                original.ordinates(), original.values(), original.numberCurves(),
+                original.ordinates(), curves,
                 newLabels, original.xUnits(), original.yUnits(),
                 original.xType(), original.yType()
         );
@@ -258,7 +263,9 @@ class HecDssWriteTest {
 
         DssPairedData reread = HecDss.readPairedData(dssFile, writePath);
         assertArrayEquals(original.ordinates(), reread.ordinates());
-        assertArrayEquals(original.values(), reread.values());
+        for (int c = 0; c < original.numberCurves(); c++) {
+            assertArrayEquals(original.curve(c), reread.curve(c));
+        }
         assertEquals("New Label", reread.labels()[Math.min(3, reread.labels().length - 1)]);
     }
 
@@ -285,7 +292,7 @@ class HecDssWriteTest {
         HecDss.writeGrid(dssFile, writePath, original);
 
         DssGrid reread = HecDss.readGrid(dssFile, writePath);
-        assertArrayEquals(original.data(), reread.data());
+        assertArrayEquals(original.data(), reread.data(), 0.001);
         assertEquals(original.numberOfCellsX(), reread.numberOfCellsX());
         assertEquals(original.numberOfCellsY(), reread.numberOfCellsY());
     }
@@ -296,57 +303,36 @@ class HecDssWriteTest {
         String pathname = "/grid/new/gradient/01MAY2024:1400/01MAY2024:1400/new-grad/";
 
         int cellsX = 50, cellsY = 50;
-        float[] data = new float[cellsX * cellsY];
+        double[] data = new double[cellsX * cellsY];
         for (int i = 0; i < cellsY; i++) {
             for (int j = 0; j < cellsX; j++) {
                 data[i * cellsX + j] = j + (50 * i);
             }
         }
 
-        DssGrid input = new DssGrid(data,
-                420, 1, 0, 0, cellsX, cellsY, 0,
-                2000.0f, 0.0f, 0.0f, false, false, "", 0,
-                "WKT", "", 0,
-                0.0f, 2499.0f, 0.0f, 1249.5f,
-                new float[0], new int[0]);
+        DssGrid input = DssGrid.of(data, cellsX, cellsY, 2000.0, 0.0, 0.0)
+                .withSrs("WKT", "");
 
         HecDss.writeGrid(dssFile, pathname, input);
 
         DssGrid output = HecDss.readGrid(dssFile, pathname);
         assertEquals(cellsX, output.numberOfCellsX());
         assertEquals(cellsY, output.numberOfCellsY());
-        assertArrayEquals(data, output.data());
+        assertArrayEquals(data, output.data(), 0.01);
     }
 
     // ---- Array ----
 
     @Test
-    void writeAndReadArrayFloatOnly() {
-        String dssFile = TestUtil.createTempFile("array-float-test.dss");
-        String pathname = "/test/float-array/redshift////";
+    void writeAndReadArray() {
+        String dssFile = TestUtil.createTempFile("array-test.dss");
+        String pathname = "/test/array/data////";
 
-        DssArray input = new DssArray(new int[0], new float[]{1.0f, 3.0f, 5.0f, 7.0f}, new double[0]);
+        DssArray input = new DssArray(new double[]{1.0, 3.0, 5.0, 7.0});
         HecDss.writeArray(dssFile, pathname, input);
 
         DssArray output = HecDss.readArray(dssFile, pathname);
-        assertArrayEquals(new float[]{1.0f, 3.0f, 5.0f, 7.0f}, output.floatValues());
-    }
-
-    @Test
-    void writeAndReadArrayAllThreeTypes() {
-        String dssFile = TestUtil.createTempFile("array-all-test.dss");
-        String pathname = "/TEST/LOCATION/DATA///ARRAY-TEST/";
-
-        int[] ints = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14};
-        float[] floats = {1.0f, 3.0f, 5.0f, 7.0f};
-        double[] doubles = {0.0, 32.3, 64.6, 96.9, 129.2, 161.5, 193.8, 226.1};
-        DssArray input = new DssArray(ints, floats, doubles);
-        HecDss.writeArray(dssFile, pathname, input);
-
-        DssArray output = HecDss.readArray(dssFile, pathname);
-        assertArrayEquals(ints, output.intValues());
-        assertArrayEquals(floats, output.floatValues());
-        assertArrayEquals(doubles, output.doubleValues(), 0.01);
+        assertArrayEquals(new double[]{1.0, 3.0, 5.0, 7.0}, output.values(), 0.01);
     }
 
     @Test
@@ -355,27 +341,20 @@ class HecDssWriteTest {
         String path1 = "/TEST/LOCATION/DATA///ARRAY-ORIG/";
         String path2 = "/TEST/LOCATION/DATA///ARRAY-MODIFIED/";
 
-        DssArray input = new DssArray(
-                new int[]{1, 2, 3},
-                new float[]{1.0f, 2.0f},
-                new double[]{10.0, 20.0}
-        );
+        DssArray input = new DssArray(new double[]{10.0, 20.0, 30.0});
         HecDss.writeArray(dssFile, path1, input);
 
         DssArray read = HecDss.readArray(dssFile, path1);
 
-        // Modify doubles
-        double[] modifiedDoubles = new double[read.doubleValues().length];
-        for (int i = 0; i < modifiedDoubles.length; i++) {
-            modifiedDoubles[i] = read.doubleValues()[i] * 2;
+        // Modify values
+        double[] modified = read.values();
+        for (int i = 0; i < modified.length; i++) {
+            modified[i] *= 2;
         }
-        DssArray modified = new DssArray(read.intValues(), read.floatValues(), modifiedDoubles);
-        HecDss.writeArray(dssFile, path2, modified);
+        HecDss.writeArray(dssFile, path2, new DssArray(modified));
 
         DssArray reread = HecDss.readArray(dssFile, path2);
-        assertArrayEquals(new int[]{1, 2, 3}, reread.intValues());
-        assertArrayEquals(new float[]{1.0f, 2.0f}, reread.floatValues());
-        assertArrayEquals(new double[]{20.0, 40.0}, reread.doubleValues(), 0.01);
+        assertArrayEquals(new double[]{20.0, 40.0, 60.0}, reread.values(), 0.01);
     }
 
     // ---- Text ----
@@ -411,11 +390,7 @@ class HecDssWriteTest {
         String dssFile = TestUtil.createTempFile("location-test.dss");
         String pathname = "/TEST/LOCATION/DATA///LOC-TEST/";
 
-        DssLocationInfo input = new DssLocationInfo(
-                -121.5, 38.5, 100.0,
-                0, 0, 0, 0, 0, 0,
-                "UTC", "Test supplemental info"
-        );
+        DssLocationInfo input = DssLocationInfo.of(38.5, -121.5, 100.0, "UTC");
 
         HecDss.writeLocationInfo(dssFile, pathname, input);
 
@@ -423,7 +398,6 @@ class HecDssWriteTest {
         assertEquals(-121.5, output.x(), 0.001);
         assertEquals(38.5, output.y(), 0.001);
         assertEquals(100.0, output.z(), 0.001);
-        assertEquals("Test supplemental info", output.supplemental());
     }
 
     @Test
@@ -432,7 +406,6 @@ class HecDssWriteTest {
         String pathname = "/MISSISSIPPI/ST. LOUIS/Location Info////";
 
         DssLocationInfo loc = HecDss.readLocationInfo(dssFile, pathname);
-        // Just verify it reads without error and has coordinates
         assertNotNull(loc.timeZoneName());
     }
 
@@ -487,21 +460,17 @@ class HecDssWriteTest {
         String dssFile = copyResourceToTemp("sample7.dss");
         String pathname = "//SACRAMENTO/PRECIP-INC//1Day/OBS/";
 
-        // Read to verify it exists
         Instant t1 = ZonedDateTime.parse("2005-01-01T00:00:00Z").toInstant();
         Instant t2 = ZonedDateTime.parse("2005-01-04T00:00:00Z").toInstant();
         DssTimeSeries ts = HecDss.readTimeSeries(dssFile, pathname, new DssTimeWindow(t1, t2));
         assertTrue(ts.size() > 0);
 
-        // Write to new path, then delete it
         String newPath = "//SACRAMENTO/PRECIP-INC//1Day/OBS-to-delete/";
         HecDss.writeTimeSeries(dssFile, newPath, ts);
 
-        // Verify written
         DssTimeSeries written = HecDss.readTimeSeries(dssFile, newPath, new DssTimeWindow(t1, t2));
         assertEquals(ts.size(), written.size());
 
-        // Delete all dated variants
         var catalog = HecDss.getCatalog(dssFile);
         for (DssPathname p : catalog) {
             if (p.fPart().equals("OBS-to-delete")) {
@@ -509,7 +478,6 @@ class HecDssWriteTest {
             }
         }
 
-        // Verify deleted — reading should throw or return empty
         assertThrows(DssException.class, () ->
                 HecDss.readTimeSeries(dssFile, newPath, new DssTimeWindow(t1, t2)));
     }

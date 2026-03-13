@@ -1,6 +1,5 @@
 package mil.army.usace.hec.dss.internal;
 
-import mil.army.usace.hec.dss.DssConstants;
 import mil.army.usace.hec.dss.DssException;
 import mil.army.usace.hec.dss.DssPathname;
 import mil.army.usace.hec.dss.DssTimeSeries;
@@ -31,7 +30,7 @@ public final class TimeSeriesWriter {
 
         Arena arena = session.arena();
 
-        Instant startInstant = Instant.ofEpochSecond(data.epochSecond(0));
+        Instant startInstant = data.time(0);
         NativeDateFormat time = NativeDateFormat.from(startInstant, startInstant);
 
         double[] values = data.values();
@@ -68,10 +67,9 @@ public final class TimeSeriesWriter {
         int granularity = 60; // seconds per unit — minutes is the standard for irregular
 
         // Compute base date (julian days since DSS epoch) from first value
-        long[] epochs = data.epochSeconds();
-        long firstEpoch = epochs[0];
-        long baseDaysSinceEpoch = (firstEpoch - DssConstants.BASE_EPOCH_SECONDS) / 86400;
-        long baseEpochSeconds = DssConstants.BASE_EPOCH_SECONDS + baseDaysSinceEpoch * 86400;
+        long firstEpoch = data.time(0).getEpochSecond();
+        long baseDaysSinceEpoch = (firstEpoch - InternalConstants.BASE_EPOCH_SECONDS) / 86400;
+        long baseEpochSeconds = InternalConstants.BASE_EPOCH_SECONDS + baseDaysSinceEpoch * 86400;
 
         // Format the base date for native call
         Instant baseInstant = Instant.ofEpochSecond(baseEpochSeconds);
@@ -80,7 +78,7 @@ public final class TimeSeriesWriter {
         // Compute time offsets in granularity units from base
         int[] timeOffsets = new int[data.size()];
         for (int i = 0; i < data.size(); i++) {
-            timeOffsets[i] = (int) ((epochs[i] - baseEpochSeconds) / granularity);
+            timeOffsets[i] = (int) ((data.time(i).getEpochSecond() - baseEpochSeconds) / granularity);
         }
 
         MemorySegment pathnameInput = arena.allocateFrom(pathname.toString());

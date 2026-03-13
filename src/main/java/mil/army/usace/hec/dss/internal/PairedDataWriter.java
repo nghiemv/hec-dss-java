@@ -17,10 +17,19 @@ public final class PairedDataWriter {
         Arena arena = session.arena();
 
         double[] ordinates = data.ordinates();
-        double[] values = data.values();
+        // Reconstruct column-major flat array for native call
+        int numOrds = data.numberOrdinates();
+        int numCurves = data.numberCurves();
+        double[] flatValues = new double[numOrds * numCurves];
+        for (int c = 0; c < numCurves; c++) {
+            double[] curve = data.curve(c);
+            for (int i = 0; i < numOrds; i++) {
+                flatValues[i * numCurves + c] = curve[i];
+            }
+        }
         MemorySegment pathnameInput = arena.allocateFrom(pathname.toString());
         MemorySegment ordinatesInput = NativeBuffers.allocateDoubles(arena, ordinates);
-        MemorySegment valuesInput = NativeBuffers.allocateDoubles(arena, values);
+        MemorySegment valuesInput = NativeBuffers.allocateDoubles(arena, flatValues);
         MemorySegment xUnitsInput = arena.allocateFrom(data.xUnits());
         MemorySegment xTypeInput = arena.allocateFrom(data.xType());
         MemorySegment yUnitsInput = arena.allocateFrom(data.yUnits());
@@ -41,8 +50,8 @@ public final class PairedDataWriter {
         int status = hecdss_h.hec_dss_pdStore(
                 session.dssPointer(), pathnameInput,
                 ordinatesInput, data.numberOrdinates(),
-                valuesInput, values.length,
-                data.numberOrdinates(), data.numberCurves(),
+                valuesInput, flatValues.length,
+                numOrds, numCurves,
                 xUnitsInput, xTypeInput, yUnitsInput, yTypeInput,
                 labelsInput, labelBytes.length,
                 timezoneInput

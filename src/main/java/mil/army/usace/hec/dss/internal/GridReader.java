@@ -113,12 +113,12 @@ public final class GridReader {
                             .formatted(pathname, session.filePath(), status));
         }
 
-        float[] data = dataLength > 0
+        float[] nativeData = dataLength > 0
                 ? fullDataOutput.asSlice(0, (long) dataLength * ValueLayout.JAVA_FLOAT.byteSize())
                     .toArray(ValueLayout.JAVA_FLOAT)
                 : new float[0];
 
-        float[] rangeTable = numRanges > 0
+        float[] nativeRangeTable = numRanges > 0
                 ? rangeLimitSized.asSlice(0, (long) numRanges * ValueLayout.JAVA_FLOAT.byteSize())
                     .toArray(ValueLayout.JAVA_FLOAT)
                 : new float[0];
@@ -126,6 +126,18 @@ public final class GridReader {
                 ? rangeExceedSized.asSlice(0, (long) numRanges * ValueLayout.JAVA_INT.byteSize())
                     .toArray(ValueLayout.JAVA_INT)
                 : new int[0];
+
+        // Widen float→double and convert null sentinel → NaN
+        float nullValue = nullValueOutput.get(C_FLOAT, 0);
+        double[] data = new double[nativeData.length];
+        for (int i = 0; i < nativeData.length; i++) {
+            data[i] = (nativeData[i] == nullValue) ? Double.NaN : nativeData[i];
+        }
+
+        double[] rangeTable = new double[nativeRangeTable.length];
+        for (int i = 0; i < nativeRangeTable.length; i++) {
+            rangeTable[i] = nativeRangeTable[i];
+        }
 
         return new DssGrid(data,
                 typeOutput.get(C_INT, 0), dataTypeOutput.get(C_INT, 0),
@@ -138,7 +150,6 @@ public final class GridReader {
                 timeZoneIDOutput.getString(0), timeZoneRawOffsetOutput.get(C_INT, 0),
                 srsNameOutput.getString(0), srsDefinitionOutput.getString(0),
                 srsDefinitionTypeOutput.get(C_INT, 0),
-                nullValueOutput.get(C_FLOAT, 0),
                 maxDataValueOutput.get(C_FLOAT, 0), minDataValueOutput.get(C_FLOAT, 0),
                 meanDataValueOutput.get(C_FLOAT, 0),
                 rangeTable, rangeExceedance

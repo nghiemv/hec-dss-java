@@ -7,6 +7,8 @@ import mil.army.usace.hec.dss.DssPathname;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 
+import static mil.army.usace.hec.dss.internal.hecdss_h$shared.*;
+
 public final class ArrayWriter {
     private ArrayWriter() {}
 
@@ -15,17 +17,15 @@ public final class ArrayWriter {
 
         MemorySegment pathnameInput = arena.allocateFrom(pathname.toString());
 
-        int[] ints = data.intValues();
-        float[] floats = data.floatValues();
-        double[] doubles = data.doubleValues();
-        MemorySegment intInput = NativeBuffers.allocateInts(arena, ints);
-        MemorySegment floatInput = NativeBuffers.allocateFloats(arena, floats);
+        double[] doubles = data.values();
+        MemorySegment intInput = arena.allocate(C_INT, 1);
+        MemorySegment floatInput = arena.allocate(C_FLOAT, 1);
         MemorySegment doubleInput = NativeBuffers.allocateDoubles(arena, doubles);
 
         int status = hecdss_h.hec_dss_arrayStore(
                 session.dssPointer(), pathnameInput,
-                intInput, ints.length,
-                floatInput, floats.length,
+                intInput, 0,
+                floatInput, 0,
                 doubleInput, doubles.length
         );
 

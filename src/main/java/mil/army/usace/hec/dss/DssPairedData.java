@@ -4,12 +4,11 @@ import java.util.Objects;
 
 /**
  * Paired data (x/y curves) read from or written to a DSS file.
- * Values are stored column-major: for multi-curve data, values[i * numberCurves + c]
- * gives the y-value at ordinate i for curve c.
+ * Access y-values through {@link #curve(int)} or {@link #yValue(int, int)}.
  */
 public final class DssPairedData {
     private final double[] ordinates;
-    private final double[] values;
+    private final double[] flatValues; // column-major: flatValues[i * numberCurves + c]
     private final int numberCurves;
     private final String[] labels;
     private final String xUnits;
@@ -17,22 +16,35 @@ public final class DssPairedData {
     private final String xType;
     private final String yType;
 
-    public DssPairedData(double[] ordinates, double[] values, int numberCurves,
-                         String[] labels, String xUnits, String yUnits,
-                         String xType, String yType) {
+    /**
+     * Creates paired data from ordinates and per-curve y-value arrays.
+     *
+     * @param ordinates x-values shared by all curves
+     * @param curves    y-values per curve; curves[c] is the y-array for curve c
+     * @param labels    curve labels (may be empty or null)
+     */
+    public DssPairedData(double[] ordinates, double[][] curves, String[] labels,
+                         String xUnits, String yUnits, String xType, String yType) {
         Objects.requireNonNull(ordinates);
-        Objects.requireNonNull(values);
-        if (numberCurves < 1) {
-            throw new IllegalArgumentException("numberCurves must be >= 1, got " + numberCurves);
+        Objects.requireNonNull(curves);
+        if (curves.length < 1) {
+            throw new IllegalArgumentException("Must have at least one curve");
         }
-        if (ordinates.length * numberCurves != values.length) {
-            throw new IllegalArgumentException(
-                    "values length (%d) != ordinates (%d) * curves (%d)"
-                            .formatted(values.length, ordinates.length, numberCurves));
+        for (int c = 0; c < curves.length; c++) {
+            if (curves[c].length != ordinates.length) {
+                throw new IllegalArgumentException(
+                        "Curve %d length (%d) != ordinates length (%d)"
+                                .formatted(c, curves[c].length, ordinates.length));
+            }
         }
         this.ordinates = ordinates.clone();
-        this.values = values.clone();
-        this.numberCurves = numberCurves;
+        this.numberCurves = curves.length;
+        this.flatValues = new double[ordinates.length * numberCurves];
+        for (int i = 0; i < ordinates.length; i++) {
+            for (int c = 0; c < numberCurves; c++) {
+                flatValues[i * numberCurves + c] = curves[c][i];
+            }
+        }
         this.labels = labels != null ? labels.clone() : new String[0];
         this.xUnits = Objects.requireNonNull(xUnits);
         this.yUnits = Objects.requireNonNull(yUnits);
@@ -40,13 +52,42 @@ public final class DssPairedData {
         this.yType = Objects.requireNonNull(yType);
     }
 
+    /**
+     * Creates single-curve paired data with no labels.
+     */
+    public static DssPairedData of(double[] x, double[] y,
+                                   String xUnits, String yUnits,
+                                   String xType, String yType) {
+        return new DssPairedData(x, new double[][]{y}, null, xUnits, yUnits, xType, yType);
+    }
+
     public int numberOrdinates() { return ordinates.length; }
     public int numberCurves() { return numberCurves; }
     public double[] ordinates() { return ordinates.clone(); }
-    public double[] values() { return values.clone(); }
     public String[] labels() { return labels.clone(); }
     public String xUnits() { return xUnits; }
     public String yUnits() { return yUnits; }
     public String xType() { return xType; }
     public String yType() { return yType; }
+
+    /**
+     * Returns the y-value at the given ordinate index for the given curve.
+     */
+    public double yValue(int ordinateIndex, int curveIndex) {
+        Objects.checkIndex(ordinateIndex, ordinates.length);
+        Objects.checkIndex(curveIndex, numberCurves);
+        return flatValues[ordinateIndex * numberCurves + curveIndex];
+    }
+
+    /**
+     * Returns all y-values for the given curve (defensive copy).
+     */
+    public double[] curve(int curveIndex) {
+        Objects.checkIndex(curveIndex, numberCurves);
+        double[] result = new double[ordinates.length];
+        for (int i = 0; i < ordinates.length; i++) {
+            result[i] = flatValues[i * numberCurves + curveIndex];
+        }
+        return result;
+    }
 }

@@ -55,19 +55,19 @@ public final class ArrayReader {
                             .formatted(pathname, session.filePath(), status));
         }
 
-        int[] intValues = intCount > 0
-                ? intOutput.asSlice(0, (long) intCount * ValueLayout.JAVA_INT.byteSize())
-                    .toArray(ValueLayout.JAVA_INT)
-                : new int[0];
-        float[] floatValues = floatCount > 0
-                ? floatOutput.asSlice(0, (long) floatCount * ValueLayout.JAVA_FLOAT.byteSize())
-                    .toArray(ValueLayout.JAVA_FLOAT)
-                : new float[0];
-        double[] doubleValues = doubleCount > 0
-                ? doubleOutput.asSlice(0, (long) doubleCount * ValueLayout.JAVA_DOUBLE.byteSize())
-                    .toArray(ValueLayout.JAVA_DOUBLE)
-                : new double[0];
+        // Widen all native types to double and concatenate
+        double[] values = new double[intCount + floatCount + doubleCount];
+        int offset = 0;
+        for (int i = 0; i < intCount; i++) {
+            values[offset++] = intOutput.getAtIndex(ValueLayout.JAVA_INT, i);
+        }
+        for (int i = 0; i < floatCount; i++) {
+            values[offset++] = floatOutput.getAtIndex(ValueLayout.JAVA_FLOAT, i);
+        }
+        for (int i = 0; i < doubleCount; i++) {
+            values[offset++] = doubleOutput.getAtIndex(ValueLayout.JAVA_DOUBLE, i);
+        }
 
-        return new DssArray(intValues, floatValues, doubleValues);
+        return new DssArray(values);
     }
 }

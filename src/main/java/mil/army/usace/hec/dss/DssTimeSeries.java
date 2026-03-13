@@ -5,9 +5,11 @@ import java.util.Objects;
 import java.util.stream.IntStream;
 
 /**
- * Time series data read from a DSS file.
- * This is a plain value object — no native resources, no lifecycle management.
- * Safe to hold indefinitely, pass between threads, serialize, etc.
+ * Time series data read from or written to a DSS file.
+ * Plain value object — no native resources, no lifecycle management.
+ *
+ * <p>Missing values are represented as {@link Double#NaN}.
+ * Use {@link #isUndefined(int)} to check, or {@link #dropNa()} to exclude them.
  */
 public final class DssTimeSeries {
     private final double[] values;
@@ -15,15 +17,18 @@ public final class DssTimeSeries {
     private final String units;
     private final String type;
 
-    public DssTimeSeries(double[] values, long[] epochSeconds, String units, String type) {
+    public DssTimeSeries(Instant[] times, double[] values, String units, String type) {
+        Objects.requireNonNull(times);
         Objects.requireNonNull(values);
-        Objects.requireNonNull(epochSeconds);
-        if (values.length != epochSeconds.length) {
+        if (values.length != times.length) {
             throw new IllegalArgumentException(
-                    "values length (%d) != times length (%d)".formatted(values.length, epochSeconds.length));
+                    "values length (%d) != times length (%d)".formatted(values.length, times.length));
+        }
+        this.epochSeconds = new long[times.length];
+        for (int i = 0; i < times.length; i++) {
+            this.epochSeconds[i] = Objects.requireNonNull(times[i]).getEpochSecond();
         }
         this.values = values.clone();
-        this.epochSeconds = epochSeconds.clone();
         this.units = Objects.requireNonNull(units);
         this.type = Objects.requireNonNull(type);
     }
@@ -46,16 +51,12 @@ public final class DssTimeSeries {
         return values.clone();
     }
 
-    /**
-     * Returns the epoch second at the given index (no object allocation).
-     */
-    public long epochSecond(int index) {
-        Objects.checkIndex(index, epochSeconds.length);
-        return epochSeconds[index];
-    }
-
-    public long[] epochSeconds() {
-        return epochSeconds.clone();
+    public Instant[] times() {
+        Instant[] result = new Instant[epochSeconds.length];
+        for (int i = 0; i < epochSeconds.length; i++) {
+            result[i] = Instant.ofEpochSecond(epochSeconds[i]);
+        }
+        return result;
     }
 
     public String units() {
@@ -67,19 +68,27 @@ public final class DssTimeSeries {
     }
 
     /**
+     * Returns true if the value at the given index is undefined (missing).
+     */
+    public boolean isUndefined(int index) {
+        Objects.checkIndex(index, values.length);
+        return Double.isNaN(values[index]);
+    }
+
+    /**
      * Returns a new time series with missing/undefined values excluded.
      */
     public DssTimeSeries dropNa() {
         int[] kept = IntStream.range(0, values.length)
-                .filter(i -> values[i] != DssConstants.UNDEFINED_DOUBLE)
+                .filter(i -> !Double.isNaN(values[i]))
                 .toArray();
         if (kept.length == values.length) return this;
         double[] newValues = new double[kept.length];
-        long[] newTimes = new long[kept.length];
+        Instant[] newTimes = new Instant[kept.length];
         for (int i = 0; i < kept.length; i++) {
             newValues[i] = values[kept[i]];
-            newTimes[i] = epochSeconds[kept[i]];
+            newTimes[i] = Instant.ofEpochSecond(epochSeconds[kept[i]]);
         }
-        return new DssTimeSeries(newValues, newTimes, units, type);
+        return new DssTimeSeries(newTimes, newValues, units, type);
     }
 }

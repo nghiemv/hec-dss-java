@@ -16,4 +16,17 @@ public record DssLocationInfo(
         Objects.requireNonNull(timeZoneName);
         Objects.requireNonNull(supplemental);
     }
+
+    /**
+     * Creates location info with WGS84 geographic coordinates.
+     */
+    public static DssLocationInfo of(double latitude, double longitude, double elevation, String timeZone) {
+        return new DssLocationInfo(
+                longitude, latitude, elevation,
+                2, 0,  // coordinateSystem=geographic, coordinateId=0
+                3, 2,  // horizontalUnits=degrees, horizontalDatum=WGS84
+                1, 1,  // verticalUnits=meters, verticalDatum=NAVD88
+                timeZone, ""
+        );
+    }
 }

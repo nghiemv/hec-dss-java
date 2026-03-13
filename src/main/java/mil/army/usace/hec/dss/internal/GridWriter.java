@@ -8,10 +8,25 @@ import java.lang.foreign.MemorySegment;
 import static mil.army.usace.hec.dss.internal.hecdss_h$shared.*;
 
 public final class GridWriter {
+    private static final float NULL_SENTINEL = -Float.MAX_VALUE;
+
     private GridWriter() {}
 
     public static void write(DssSession session, DssPathname pathname, DssGrid grid) {
         Arena arena = session.arena();
+
+        // Narrow double→float and convert NaN→sentinel
+        double[] doubleData = grid.data();
+        float[] nativeData = new float[doubleData.length];
+        for (int i = 0; i < doubleData.length; i++) {
+            nativeData[i] = Double.isNaN(doubleData[i]) ? NULL_SENTINEL : (float) doubleData[i];
+        }
+
+        double[] doubleRangeTable = grid.rangeLimitTable();
+        float[] nativeRangeTable = new float[doubleRangeTable.length];
+        for (int i = 0; i < doubleRangeTable.length; i++) {
+            nativeRangeTable[i] = (float) doubleRangeTable[i];
+        }
 
         MemorySegment pathnameInput = arena.allocateFrom(pathname.toString());
         MemorySegment dataUnitsInput = arena.allocateFrom("");
@@ -20,9 +35,9 @@ public final class GridWriter {
         MemorySegment srsDefinitionInput = arena.allocateFrom(grid.srsDefinition());
         MemorySegment timeZoneIdInput = arena.allocateFrom(grid.timeZoneId());
 
-        MemorySegment rangeLimitInput = NativeBuffers.allocateFloats(arena, grid.rangeLimitTable());
+        MemorySegment rangeLimitInput = NativeBuffers.allocateFloats(arena, nativeRangeTable);
         MemorySegment rangeExceedInput = NativeBuffers.allocateInts(arena, grid.numberEqualOrExceedingRangeLimit());
-        MemorySegment dataInput = NativeBuffers.allocateFloats(arena, grid.data());
+        MemorySegment dataInput = NativeBuffers.allocateFloats(arena, nativeData);
 
         int status = hecdss_h.hec_dss_gridStore(
                 session.dssPointer(), pathnameInput,
@@ -37,10 +52,10 @@ public final class GridWriter {
                 0, // compressionSize
                 dataUnitsInput, dataSourceInput,
                 srsNameInput, srsDefinitionInput, timeZoneIdInput,
-                grid.cellSize(),
-                grid.xCoordOfGridCellZero(), grid.yCoordOfGridCellZero(),
-                grid.nullValue(),
-                grid.maxDataValue(), grid.minDataValue(), grid.meanDataValue(),
+                (float) grid.cellSize(),
+                (float) grid.xCoordOfGridCellZero(), (float) grid.yCoordOfGridCellZero(),
+                NULL_SENTINEL,
+                (float) grid.maxDataValue(), (float) grid.minDataValue(), (float) grid.meanDataValue(),
                 rangeLimitInput, rangeExceedInput,
                 dataInput
         );

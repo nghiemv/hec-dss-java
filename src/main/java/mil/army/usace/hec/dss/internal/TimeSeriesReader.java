@@ -1,6 +1,5 @@
 package mil.army.usace.hec.dss.internal;
 
-import mil.army.usace.hec.dss.DssConstants;
 import mil.army.usace.hec.dss.DssPathname;
 import mil.army.usace.hec.dss.DssException;
 import mil.army.usace.hec.dss.DssTimeSeries;
@@ -97,12 +96,16 @@ public final class TimeSeriesReader {
                 (long) count * ValueLayout.JAVA_INT.byteSize())
                 .toArray(ValueLayout.JAVA_INT);
 
-        long[] epochSeconds = new long[count];
+        Instant[] times = new Instant[count];
         for (int i = 0; i < count; i++) {
-            epochSeconds[i] = DssConstants.BASE_EPOCH_SECONDS + (long) timeDeltas[i] * granularity;
+            times[i] = Instant.ofEpochSecond(
+                    InternalConstants.BASE_EPOCH_SECONDS + (long) timeDeltas[i] * granularity);
+            if (values[i] == InternalConstants.UNDEFINED_DOUBLE) {
+                values[i] = Double.NaN;
+            }
         }
 
-        return new DssTimeSeries(values, epochSeconds, units, type);
+        return new DssTimeSeries(times, values, units, type);
     }
 
     private static DssTimeWindow readRange(DssSession session, DssPathname pathname) {
