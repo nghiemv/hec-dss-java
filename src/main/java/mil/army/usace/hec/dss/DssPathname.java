@@ -166,6 +166,16 @@ public record DssPathname(String aPart, String bPart, String cPart, String dPart
     }
 
     /**
+     * Checks if the record-identifying parts (A, B, C, E, F) contain wildcards.
+     * D-part (date window) is excluded — wildcards there mean "all dates" and are valid
+     * for record retrieval.
+     */
+    public boolean hasWildcardRecordParts() {
+        return WILDCARD.equals(aPart) || WILDCARD.equals(bPart) || WILDCARD.equals(cPart)
+                || WILDCARD.equals(ePart) || WILDCARD.equals(fPart);
+    }
+
+    /**
      * Enumeration of the path parts.
      */
     public enum Part {A, B, C, D, E, F}

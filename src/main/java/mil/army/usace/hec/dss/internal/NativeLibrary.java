@@ -1,22 +1,20 @@
 package mil.army.usace.hec.dss.internal;
 
+import mil.army.usace.hec.dss.DssException;
 import org.scijava.nativelib.NativeLoader;
 
-enum NativeLibrary {
-    HEC_DSS("hecdss");
+final class NativeLibrary {
+    private static volatile boolean loaded;
 
-    private final String libraryName;
+    private NativeLibrary() {}
 
-    NativeLibrary(String libraryName) {
-        this.libraryName = libraryName;
-    }
-
-    void initialize() {
+    static void load() throws DssException {
+        if (loaded) return;
         try {
-            NativeLoader.loadLibrary(this.libraryName);
-        } catch (Exception exception) {
-            String errorMessage = String.format("Failed to load native library: %s", this.libraryName);
-            throw new RuntimeException(errorMessage, exception);
+            NativeLoader.loadLibrary("hecdss");
+            loaded = true;
+        } catch (Exception e) {
+            throw new DssException("Failed to load native library: hecdss", e);
         }
     }
 }

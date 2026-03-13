@@ -9,54 +9,66 @@ import java.util.logging.Logger;
 
 import static mil.army.usace.hec.dss.internal.hecdss_h$shared.*;
 
-final class DssSession implements AutoCloseable {
+public final class DssSession implements AutoCloseable {
     private static final Logger logger = Logger.getLogger(DssSession.class.getName());
 
-    private final String dssFilePath;
-    private final Arena memorySession;
-    private final MemorySegment dssStackPointer;
+    private final String filePath;
+    private final Arena arena;
+    private final MemorySegment dssPointer;
+    private boolean closed;
 
-    static {
-        NativeLibrary.HEC_DSS.initialize();
+    private DssSession(String filePath, Arena arena, MemorySegment dssPointer) {
+        this.filePath = filePath;
+        this.arena = arena;
+        this.dssPointer = dssPointer;
     }
 
-    private DssSession(String dssFilePath) {
-        this.dssFilePath = dssFilePath;
-        this.memorySession = Arena.ofConfined();
-        this.dssStackPointer = initPointer(dssFilePath);
-    }
+    public static DssSession open(String filePath) throws DssException {
+        NativeLibrary.load();
 
-    public static DssSession initiate(String dssFilePath) {
-        return new DssSession(dssFilePath);
-    }
-
-    public Arena getMemorySession() {
-        return this.memorySession;
-    }
-
-    public MemorySegment getDssStackPointer() {
-        return this.dssStackPointer;
-    }
-
-    private static MemorySegment initPointer(String dssFilePath) {
-        try (Arena arena = Arena.ofConfined()) {
-            MemorySegment pathHolder = arena.allocateFrom(dssFilePath);
+        Arena arena = Arena.ofConfined();
+        try {
+            MemorySegment pathHolder = arena.allocateFrom(filePath);
             MemorySegment pointerHolder = arena.allocate(C_POINTER);
-            int openStatus = hecdss_h.hec_dss_open(pathHolder, pointerHolder);
+            int status = hecdss_h.hec_dss_open(pathHolder, pointerHolder);
 
-            if (openStatus != 0) {
-                throw new DssException("Failed to open DSS file: " + dssFilePath);
+            if (status != 0) {
+                throw new DssException("Failed to open DSS file '%s': status=%d"
+                        .formatted(filePath, status));
             }
-            return pointerHolder.get(ValueLayout.ADDRESS, 0);
+
+            MemorySegment dssPointer = pointerHolder.get(ValueLayout.ADDRESS, 0);
+            return new DssSession(filePath, arena, dssPointer);
+        } catch (DssException e) {
+            arena.close();
+            throw e;
+        } catch (Exception e) {
+            arena.close();
+            throw new DssException("Failed to open DSS file '%s'".formatted(filePath), e);
         }
+    }
+
+    Arena arena() {
+        return arena;
+    }
+
+    MemorySegment dssPointer() {
+        return dssPointer;
     }
 
     @Override
     public void close() {
-        int closeStatus = hecdss_h.hec_dss_close(this.dssStackPointer);
-        if (closeStatus != 0) {
-            logger.severe("Failed to close DSS File: " + this.dssFilePath);
+        if (closed) return;
+        closed = true;
+
+        try {
+            int status = hecdss_h.hec_dss_close(dssPointer);
+            if (status != 0) {
+                logger.severe("Failed to close DSS file '%s': status=%d"
+                        .formatted(filePath, status));
+            }
+        } finally {
+            arena.close();
         }
-        this.memorySession.close();
     }
 }
