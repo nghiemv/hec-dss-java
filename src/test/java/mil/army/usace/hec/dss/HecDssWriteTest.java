@@ -419,12 +419,7 @@ class HecDssWriteTest {
         assertEquals(original.x(), reread.x(), 0.001);
         assertEquals(original.y(), reread.y(), 0.001);
         assertEquals(original.z(), reread.z(), 0.001);
-        assertEquals(original.coordinateSystem(), reread.coordinateSystem());
-        assertEquals(original.coordinateId(), reread.coordinateId());
-        assertEquals(original.horizontalUnits(), reread.horizontalUnits());
-        assertEquals(original.horizontalDatum(), reread.horizontalDatum());
-        assertEquals(original.verticalUnits(), reread.verticalUnits());
-        assertEquals(original.verticalDatum(), reread.verticalDatum());
+        assertEquals(original.crs(), reread.crs());
         assertEquals(original.timeZoneName(), reread.timeZoneName());
         assertEquals(original.supplemental(), reread.supplemental());
     }
@@ -439,9 +434,7 @@ class HecDssWriteTest {
 
         DssLocationInfo modified = new DssLocationInfo(
                 original.x() + 1.0, original.y(), original.z(),
-                original.coordinateSystem(), original.coordinateId(),
-                original.horizontalUnits(), original.horizontalDatum(),
-                original.verticalUnits(), original.verticalDatum(),
+                original.crs(),
                 original.timeZoneName(), original.supplemental()
         );
         HecDss.writeLocationInfo(dssFile, writePath, modified);

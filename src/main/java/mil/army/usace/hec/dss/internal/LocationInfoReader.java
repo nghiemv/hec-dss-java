@@ -1,6 +1,8 @@
 package mil.army.usace.hec.dss.internal;
 
-import mil.army.usace.hec.dss.*;
+import mil.army.usace.hec.dss.DssException;
+import mil.army.usace.hec.dss.DssLocationInfo;
+import mil.army.usace.hec.dss.DssPathname;
 
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
@@ -45,16 +47,20 @@ public final class LocationInfoReader {
                             .formatted(pathname, session.filePath(), status));
         }
 
+        String crs = CrsMapping.toCrs(
+                coordinateSystemOutput.get(C_INT, 0),
+                coordinateIdOutput.get(C_INT, 0),
+                horizontalUnitsOutput.get(C_INT, 0),
+                horizontalDatumOutput.get(C_INT, 0),
+                verticalUnitsOutput.get(C_INT, 0),
+                verticalDatumOutput.get(C_INT, 0)
+        );
+
         return new DssLocationInfo(
                 xOutput.get(C_DOUBLE, 0),
                 yOutput.get(C_DOUBLE, 0),
                 zOutput.get(C_DOUBLE, 0),
-                CoordinateSystem.fromCode(coordinateSystemOutput.get(C_INT, 0)),
-                coordinateIdOutput.get(C_INT, 0),
-                LengthUnit.fromCode(horizontalUnitsOutput.get(C_INT, 0)),
-                HorizontalDatum.fromCode(horizontalDatumOutput.get(C_INT, 0)),
-                LengthUnit.fromCode(verticalUnitsOutput.get(C_INT, 0)),
-                VerticalDatum.fromCode(verticalDatumOutput.get(C_INT, 0)),
+                crs,
                 timezoneOutput.getString(0),
                 supplementalOutput.getString(0)
         );

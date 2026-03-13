@@ -15,6 +15,8 @@ public final class LocationInfoWriter {
     public static void write(DssSession session, DssPathname pathname, DssLocationInfo info) {
         Arena arena = session.arena();
 
+        CrsMapping.NativeCodes codes = CrsMapping.fromCrs(info.crs());
+
         MemorySegment pathnameInput = arena.allocateFrom(pathname.toString());
         MemorySegment timezoneInput = arena.allocateFrom(info.timeZoneName());
         MemorySegment supplementalInput = arena.allocateFrom(info.supplemental());
@@ -22,9 +24,9 @@ public final class LocationInfoWriter {
         int status = hecdss_h.hec_dss_locationStore(
                 session.dssPointer(), pathnameInput,
                 info.x(), info.y(), info.z(),
-                info.coordinateSystem().code(), info.coordinateId(),
-                info.horizontalUnits().code(), info.horizontalDatum().code(),
-                info.verticalUnits().code(), info.verticalDatum().code(),
+                codes.coordinateSystem(), codes.coordinateId(),
+                codes.horizontalUnits(), codes.horizontalDatum(),
+                codes.verticalUnits(), codes.verticalDatum(),
                 timezoneInput, supplementalInput,
                 1  // replace = true
         );
