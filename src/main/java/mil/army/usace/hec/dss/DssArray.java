@@ -9,8 +9,12 @@ import java.util.Objects;
  */
 public record DssArray(int[] intValues, float[] floatValues, double[] doubleValues) {
     public DssArray {
-        Objects.requireNonNull(intValues);
-        Objects.requireNonNull(floatValues);
-        Objects.requireNonNull(doubleValues);
+        intValues = Objects.requireNonNull(intValues).clone();
+        floatValues = Objects.requireNonNull(floatValues).clone();
+        doubleValues = Objects.requireNonNull(doubleValues).clone();
     }
+
+    @Override public int[] intValues() { return intValues.clone(); }
+    @Override public float[] floatValues() { return floatValues.clone(); }
+    @Override public double[] doubleValues() { return doubleValues.clone(); }
 }

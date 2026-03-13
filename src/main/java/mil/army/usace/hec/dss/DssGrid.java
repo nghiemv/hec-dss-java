@@ -7,9 +7,11 @@ import java.util.Objects;
  */
 public record DssGrid(float[] data, DssGridInfo info, DssGridSpatialReference srs, DssGridStatistics stats) {
     public DssGrid {
-        Objects.requireNonNull(data);
+        data = Objects.requireNonNull(data).clone();
         Objects.requireNonNull(info);
         Objects.requireNonNull(srs);
         Objects.requireNonNull(stats);
     }
+
+    @Override public float[] data() { return data.clone(); }
 }

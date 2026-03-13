@@ -11,7 +11,10 @@ public record DssGridStatistics(
         float[] rangeLimitTable, int[] numberEqualOrExceedingRangeLimit
 ) {
     public DssGridStatistics {
-        Objects.requireNonNull(rangeLimitTable);
-        Objects.requireNonNull(numberEqualOrExceedingRangeLimit);
+        rangeLimitTable = Objects.requireNonNull(rangeLimitTable).clone();
+        numberEqualOrExceedingRangeLimit = Objects.requireNonNull(numberEqualOrExceedingRangeLimit).clone();
     }
+
+    @Override public float[] rangeLimitTable() { return rangeLimitTable.clone(); }
+    @Override public int[] numberEqualOrExceedingRangeLimit() { return numberEqualOrExceedingRangeLimit.clone(); }
 }

@@ -16,14 +16,16 @@ public final class DssTimeSeries {
     private final String type;
 
     public DssTimeSeries(double[] values, long[] epochSeconds, String units, String type) {
-        this.values = Objects.requireNonNull(values);
-        this.epochSeconds = Objects.requireNonNull(epochSeconds);
-        this.units = Objects.requireNonNull(units);
-        this.type = Objects.requireNonNull(type);
+        Objects.requireNonNull(values);
+        Objects.requireNonNull(epochSeconds);
         if (values.length != epochSeconds.length) {
             throw new IllegalArgumentException(
                     "values length (%d) != times length (%d)".formatted(values.length, epochSeconds.length));
         }
+        this.values = values.clone();
+        this.epochSeconds = epochSeconds.clone();
+        this.units = Objects.requireNonNull(units);
+        this.type = Objects.requireNonNull(type);
     }
 
     public int size() {
@@ -40,11 +42,8 @@ public final class DssTimeSeries {
         return Instant.ofEpochSecond(epochSeconds[index]);
     }
 
-    /**
-     * Returns the backing values array. Do not mutate.
-     */
     public double[] values() {
-        return values;
+        return values.clone();
     }
 
     /**
@@ -55,11 +54,8 @@ public final class DssTimeSeries {
         return epochSeconds[index];
     }
 
-    /**
-     * Returns the backing epoch-seconds array. Do not mutate.
-     */
     public long[] epochSeconds() {
-        return epochSeconds;
+        return epochSeconds.clone();
     }
 
     public String units() {
