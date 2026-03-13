@@ -1,5 +1,6 @@
 package mil.army.usace.hec.dss.internal;
 
+import mil.army.usace.hec.dss.Crs;
 import mil.army.usace.hec.dss.DssException;
 import mil.army.usace.hec.dss.DssLocationInfo;
 import mil.army.usace.hec.dss.DssPathname;
@@ -47,7 +48,7 @@ public final class LocationInfoReader {
                             .formatted(pathname, session.filePath(), status));
         }
 
-        String crs = CrsMapping.toCrs(
+        Crs crs = CrsMapping.toCrs(
                 coordinateSystemOutput.get(C_INT, 0),
                 coordinateIdOutput.get(C_INT, 0),
                 horizontalUnitsOutput.get(C_INT, 0),
