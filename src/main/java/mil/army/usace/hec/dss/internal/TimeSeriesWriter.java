@@ -1,5 +1,6 @@
 package mil.army.usace.hec.dss.internal;
 
+import mil.army.usace.hec.dss.DssConstants;
 import mil.army.usace.hec.dss.DssException;
 import mil.army.usace.hec.dss.DssPathname;
 import mil.army.usace.hec.dss.DssTimeSeries;
@@ -7,14 +8,10 @@ import mil.army.usace.hec.dss.DssTimeSeries;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 
 import static mil.army.usace.hec.dss.internal.hecdss_h$shared.*;
 
 public final class TimeSeriesWriter {
-    private static final long BASE_EPOCH_SECONDS =
-            OffsetDateTime.of(1899, 12, 31, 0, 0, 0, 0, ZoneOffset.UTC).toEpochSecond();
 
     private TimeSeriesWriter() {}
 
@@ -40,7 +37,7 @@ public final class TimeSeriesWriter {
         MemorySegment pathnameInput = arena.allocateFrom(pathname.toString());
         MemorySegment startDateInput = arena.allocateFrom(time.startDate());
         MemorySegment startTimeInput = arena.allocateFrom(time.startTime());
-        MemorySegment valueArray = allocateDoubles(arena, data.values());
+        MemorySegment valueArray = NativeBuffers.allocateDoubles(arena, data.values());
         MemorySegment qualityArray = arena.allocate(C_INT, data.size());
         MemorySegment unitsInput = arena.allocateFrom(data.units());
         MemorySegment typeInput = arena.allocateFrom(data.type());
@@ -71,8 +68,8 @@ public final class TimeSeriesWriter {
 
         // Compute base date (julian days since DSS epoch) from first value
         long firstEpoch = data.epochSeconds()[0];
-        long baseDaysSinceEpoch = (firstEpoch - BASE_EPOCH_SECONDS) / 86400;
-        long baseEpochSeconds = BASE_EPOCH_SECONDS + baseDaysSinceEpoch * 86400;
+        long baseDaysSinceEpoch = (firstEpoch - DssConstants.BASE_EPOCH_SECONDS) / 86400;
+        long baseEpochSeconds = DssConstants.BASE_EPOCH_SECONDS + baseDaysSinceEpoch * 86400;
 
         // Format the base date for native call
         Instant baseInstant = Instant.ofEpochSecond(baseEpochSeconds);
@@ -86,8 +83,8 @@ public final class TimeSeriesWriter {
 
         MemorySegment pathnameInput = arena.allocateFrom(pathname.toString());
         MemorySegment baseDateInput = arena.allocateFrom(baseDateFmt.startDate());
-        MemorySegment timesInput = allocateInts(arena, timeOffsets);
-        MemorySegment valueArray = allocateDoubles(arena, data.values());
+        MemorySegment timesInput = NativeBuffers.allocateInts(arena, timeOffsets);
+        MemorySegment valueArray = NativeBuffers.allocateDoubles(arena, data.values());
         MemorySegment qualityArray = arena.allocate(C_INT, data.size());
         MemorySegment unitsInput = arena.allocateFrom(data.units());
         MemorySegment typeInput = arena.allocateFrom(data.type());
@@ -106,17 +103,5 @@ public final class TimeSeriesWriter {
                     "Failed to write irregular time series '%s' to '%s': native status code %d"
                             .formatted(pathname, session.filePath(), status));
         }
-    }
-
-    private static MemorySegment allocateDoubles(Arena arena, double[] values) {
-        MemorySegment segment = arena.allocate(C_DOUBLE, values.length);
-        MemorySegment.copy(values, 0, segment, C_DOUBLE, 0, values.length);
-        return segment;
-    }
-
-    private static MemorySegment allocateInts(Arena arena, int[] values) {
-        MemorySegment segment = arena.allocate(C_INT, values.length);
-        MemorySegment.copy(values, 0, segment, C_INT, 0, values.length);
-        return segment;
     }
 }

@@ -1,46 +1,39 @@
 package mil.army.usace.hec.dss;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.logging.Logger;
 
 public class TestUtil {
-    private static final Logger logger = Logger.getLogger(TestUtil.class.getName());
 
     public static Path getResourceFile(String pathFromResource) {
         if (!pathFromResource.startsWith("/")) {
             pathFromResource = "/" + pathFromResource;
         }
-
-            URL url = TestUtil.class.getResource(pathFromResource);
-            if (url == null) return null;
-
-
-        Path rval = null;
+        URL url = TestUtil.class.getResource(pathFromResource);
+        if (url == null) {
+            throw new AssertionError("Test resource not found: " + pathFromResource);
+        }
         try {
-            rval = Paths.get(url.toURI());
+            return Paths.get(url.toURI());
+        } catch (URISyntaxException e) {
+            throw new AssertionError("Invalid resource URI: " + pathFromResource, e);
         }
-        catch (Exception e) {
-            return null;
-        }
-
-        return rval;
-
     }
 
     public static String createTempFile(String fileName) {
+        int index = fileName.lastIndexOf(".");
+        boolean hasExtension = index > 0;
+        String prefix = hasExtension ? fileName.substring(0, index) : fileName;
+        String suffix = hasExtension ? fileName.substring(index) : "";
         try {
-            int index = fileName.lastIndexOf(".");
-            boolean hasExtension = index > 0;
-            String prefix = hasExtension ? fileName.substring(0, index) : fileName;
-            String suffix = hasExtension ? fileName.substring(index) : "";
             return Files.createTempFile(prefix, suffix).toAbsolutePath().toString();
         } catch (IOException e) {
-            logger.warning(e.getMessage());
-            return null;
+            throw new UncheckedIOException("Cannot create temp file: " + fileName, e);
         }
     }
 }

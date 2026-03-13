@@ -10,7 +10,7 @@ import java.lang.foreign.MemorySegment;
 import static mil.army.usace.hec.dss.internal.hecdss_h$shared.*;
 
 public final class LocationInfoReader {
-    private static final int STRING_BUFFER_LENGTH = 100;
+    private static final int STRING_BUFFER_LENGTH = NativeBuffers.STRING_BUFFER_LENGTH;
     private static final int SUPPLEMENTAL_BUFFER_LENGTH = 4096;
 
     private LocationInfoReader() {}

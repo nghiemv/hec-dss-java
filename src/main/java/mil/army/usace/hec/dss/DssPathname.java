@@ -1,16 +1,12 @@
 package mil.army.usace.hec.dss;
 
-import java.util.Arrays;
 import java.util.Optional;
-import java.util.regex.Pattern;
-import java.util.stream.Stream;
 
 /**
  * Represents a DSS pathname with parts A through F.
  * All instances are guaranteed to be valid.
  */
 public record DssPathname(String aPart, String bPart, String cPart, String dPart, String ePart, String fPart) {
-    private static final Pattern INVALID_CHAR_PATTERN = Pattern.compile("[/\\p{Cntrl}]");
     private static final String WILDCARD = "*";
 
     /**
@@ -19,16 +15,25 @@ public record DssPathname(String aPart, String bPart, String cPart, String dPart
      * @throws IllegalArgumentException if any part is invalid
      */
     public DssPathname {
-        Stream.of(aPart, bPart, cPart, dPart, ePart, fPart)
-                .forEach(part -> {
-                    if (part == null) {
-                        throw new IllegalArgumentException("Path parts cannot be null");
-                    }
-                    if (INVALID_CHAR_PATTERN.matcher(part).find()) {
-                        throw new IllegalArgumentException(
-                                "Path part contains invalid characters: " + part);
-                    }
-                });
+        validatePart(aPart);
+        validatePart(bPart);
+        validatePart(cPart);
+        validatePart(dPart);
+        validatePart(ePart);
+        validatePart(fPart);
+    }
+
+    private static void validatePart(String part) {
+        if (part == null) {
+            throw new IllegalArgumentException("Path parts cannot be null");
+        }
+        for (int i = 0; i < part.length(); i++) {
+            char c = part.charAt(i);
+            if (c == '/' || Character.isISOControl(c)) {
+                throw new IllegalArgumentException(
+                        "Path part contains invalid characters: " + part);
+            }
+        }
     }
 
     /**
@@ -162,7 +167,8 @@ public record DssPathname(String aPart, String bPart, String cPart, String dPart
      * @return true if this pathname contains any "*" wildcards
      */
     public boolean isPattern() {
-        return Arrays.asList(aPart, bPart, cPart, dPart, ePart, fPart).contains(WILDCARD);
+        return WILDCARD.equals(aPart) || WILDCARD.equals(bPart) || WILDCARD.equals(cPart)
+                || WILDCARD.equals(dPart) || WILDCARD.equals(ePart) || WILDCARD.equals(fPart);
     }
 
     /**

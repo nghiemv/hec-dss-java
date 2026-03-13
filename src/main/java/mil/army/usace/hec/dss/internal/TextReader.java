@@ -18,9 +18,9 @@ public final class TextReader {
         Arena arena = session.arena();
 
         // Try with initial buffer, grow if needed
+        MemorySegment pathnameInput = arena.allocateFrom(pathname.toString());
         int bufferSize = INITIAL_BUFFER_SIZE;
         while (bufferSize <= MAX_BUFFER_SIZE) {
-            MemorySegment pathnameInput = arena.allocateFrom(pathname.toString());
             MemorySegment buffer = arena.allocate(C_CHAR, bufferSize);
 
             int status = hecdss_h.hec_dss_textRetrieve(

@@ -11,7 +11,7 @@ import java.lang.foreign.ValueLayout;
 import static mil.army.usace.hec.dss.internal.hecdss_h$shared.*;
 
 public final class PairedDataReader {
-    private static final int STRING_BUFFER_LENGTH = 100;
+    private static final int STRING_BUFFER_LENGTH = NativeBuffers.STRING_BUFFER_LENGTH;
     private static final int LABELS_BUFFER_LENGTH = 2000;
 
     private PairedDataReader() {}
@@ -63,11 +63,8 @@ public final class PairedDataReader {
         MemorySegment labelsOutput = arena.allocate(C_CHAR, actualLabelsLen);
         MemorySegment timezoneOutput = arena.allocate(C_CHAR, STRING_BUFFER_LENGTH);
 
-        // Re-allocate pathname since we need it again
-        MemorySegment pathnameInput2 = arena.allocateFrom(pathname.toString());
-
         status = hecdss_h.hec_dss_pdRetrieve(
-                session.dssPointer(), pathnameInput2,
+                session.dssPointer(), pathnameInput,
                 ordinatesOutput, numberOrdinates,
                 valuesOutput, valuesSize,
                 numberOrdinatesRead, numberCurvesRead,

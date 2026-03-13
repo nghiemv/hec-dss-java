@@ -23,9 +23,9 @@ public final class GridWriter {
         MemorySegment srsDefinitionInput = arena.allocateFrom(srs.definition());
         MemorySegment timeZoneIdInput = arena.allocateFrom(info.timeZoneId());
 
-        MemorySegment rangeLimitInput = allocateFloats(arena, stats.rangeLimitTable());
-        MemorySegment rangeExceedInput = allocateInts(arena, stats.numberEqualOrExceedingRangeLimit());
-        MemorySegment dataInput = allocateFloats(arena, grid.data());
+        MemorySegment rangeLimitInput = NativeBuffers.allocateFloats(arena, stats.rangeLimitTable());
+        MemorySegment rangeExceedInput = NativeBuffers.allocateInts(arena, stats.numberEqualOrExceedingRangeLimit());
+        MemorySegment dataInput = NativeBuffers.allocateFloats(arena, grid.data());
 
         int status = hecdss_h.hec_dss_gridStore(
                 session.dssPointer(), pathnameInput,
@@ -53,19 +53,5 @@ public final class GridWriter {
                     "Failed to write grid '%s' to '%s': native status code %d"
                             .formatted(pathname, session.filePath(), status));
         }
-    }
-
-    private static MemorySegment allocateFloats(Arena arena, float[] values) {
-        if (values.length == 0) return arena.allocate(C_FLOAT, 1);
-        MemorySegment segment = arena.allocate(C_FLOAT, values.length);
-        MemorySegment.copy(values, 0, segment, C_FLOAT, 0, values.length);
-        return segment;
-    }
-
-    private static MemorySegment allocateInts(Arena arena, int[] values) {
-        if (values.length == 0) return arena.allocate(C_INT, 1);
-        MemorySegment segment = arena.allocate(C_INT, values.length);
-        MemorySegment.copy(values, 0, segment, C_INT, 0, values.length);
-        return segment;
     }
 }

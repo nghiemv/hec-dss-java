@@ -4,8 +4,7 @@ import mil.army.usace.hec.dss.DssPathname;
 
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -36,7 +35,7 @@ public final class CatalogReader {
                 pathFilter, count, MAX_PATHNAME_LENGTH
         );
 
-        return parseNullTerminatedStrings(pathBuffer).stream()
+        return parseNullTerminatedStrings(pathBuffer, bufferLength).stream()
                 .map(DssPathname::parse)
                 .filter(Optional::isPresent)
                 .map(Optional::get)
@@ -47,10 +46,21 @@ public final class CatalogReader {
         return hecdss_h.hec_dss_record_count(session.dssPointer());
     }
 
-    private static List<String> parseNullTerminatedStrings(MemorySegment buffer) {
-        String content = StandardCharsets.ISO_8859_1.decode(buffer.asByteBuffer()).toString();
-        return Arrays.stream(content.split("\0"))
-                .filter(s -> !s.isBlank())
-                .toList();
+    private static List<String> parseNullTerminatedStrings(MemorySegment buffer, long length) {
+        List<String> result = new ArrayList<>();
+        long offset = 0;
+        while (offset < length) {
+            byte b = buffer.get(C_CHAR, offset);
+            if (b == 0) {
+                offset++;
+                continue;
+            }
+            String s = buffer.getString(offset);
+            if (!s.isBlank()) {
+                result.add(s);
+            }
+            offset += s.length() + 1; // skip past null terminator
+        }
+        return result;
     }
 }

@@ -17,8 +17,8 @@ public final class PairedDataWriter {
         Arena arena = session.arena();
 
         MemorySegment pathnameInput = arena.allocateFrom(pathname.toString());
-        MemorySegment ordinatesInput = allocateDoubles(arena, data.ordinates());
-        MemorySegment valuesInput = allocateDoubles(arena, data.values());
+        MemorySegment ordinatesInput = NativeBuffers.allocateDoubles(arena, data.ordinates());
+        MemorySegment valuesInput = NativeBuffers.allocateDoubles(arena, data.values());
         MemorySegment xUnitsInput = arena.allocateFrom(data.xUnits());
         MemorySegment xTypeInput = arena.allocateFrom(data.xType());
         MemorySegment yUnitsInput = arena.allocateFrom(data.yUnits());
@@ -63,9 +63,4 @@ public final class PairedDataWriter {
         return sb.toString().getBytes(StandardCharsets.UTF_8);
     }
 
-    private static MemorySegment allocateDoubles(Arena arena, double[] values) {
-        MemorySegment segment = arena.allocate(C_DOUBLE, values.length);
-        MemorySegment.copy(values, 0, segment, C_DOUBLE, 0, values.length);
-        return segment;
-    }
 }

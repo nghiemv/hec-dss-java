@@ -37,14 +37,13 @@ public final class ArrayReader {
         int floatCount = floatCountOutput.get(C_INT, 0);
         int doubleCount = doubleCountOutput.get(C_INT, 0);
 
-        // Retrieve data
-        MemorySegment pathnameInput2 = arena.allocateFrom(pathname.toString());
+        // Retrieve data (reuse pathnameInput from above)
         MemorySegment intOutput = arena.allocate(C_INT, Math.max(intCount, 1));
         MemorySegment floatOutput = arena.allocate(C_FLOAT, Math.max(floatCount, 1));
         MemorySegment doubleOutput = arena.allocate(C_DOUBLE, Math.max(doubleCount, 1));
 
         status = hecdss_h.hec_dss_arrayRetrieve(
-                session.dssPointer(), pathnameInput2,
+                session.dssPointer(), pathnameInput,
                 intOutput, intCount,
                 floatOutput, floatCount,
                 doubleOutput, doubleCount

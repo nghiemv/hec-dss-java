@@ -9,7 +9,7 @@ import java.lang.foreign.ValueLayout;
 import static mil.army.usace.hec.dss.internal.hecdss_h$shared.*;
 
 public final class GridReader {
-    private static final int STRING_BUFFER_LENGTH = 100;
+    private static final int STRING_BUFFER_LENGTH = NativeBuffers.STRING_BUFFER_LENGTH;
     private static final int SRS_DEFINITION_BUFFER_LENGTH = 10000;
     private static final int MAX_RANGES = 100;
 
@@ -18,7 +18,7 @@ public final class GridReader {
     public static DssGrid read(DssSession session, DssPathname pathname) {
         Arena arena = session.arena();
 
-        // First retrieve metadata only (boolRetrieveData = 0) to get grid dimensions
+        // Allocate all output segments once — reused across both native calls
         MemorySegment pathnameInput = arena.allocateFrom(pathname.toString());
         MemorySegment typeOutput = arena.allocate(C_INT, 1);
         MemorySegment dataTypeOutput = arena.allocate(C_INT, 1);
@@ -45,7 +45,9 @@ public final class GridReader {
         MemorySegment meanDataValueOutput = arena.allocate(C_FLOAT, 1);
         MemorySegment rangeLimitTableOutput = arena.allocate(C_FLOAT, MAX_RANGES);
         MemorySegment rangeExceedanceOutput = arena.allocate(C_INT, MAX_RANGES);
-        MemorySegment dataOutput = arena.allocate(C_FLOAT, 1); // placeholder for metadata-only call
+
+        // First call: metadata only (boolRetrieveData = 0) to get grid dimensions
+        MemorySegment dataPlaceholder = arena.allocate(C_FLOAT, 1);
 
         int status = hecdss_h.hec_dss_gridRetrieve(
                 session.dssPointer(), pathnameInput, 0,
@@ -63,7 +65,7 @@ public final class GridReader {
                 nullValueOutput, maxDataValueOutput, minDataValueOutput, meanDataValueOutput,
                 rangeLimitTableOutput, MAX_RANGES,
                 rangeExceedanceOutput,
-                dataOutput, 0
+                dataPlaceholder, 0
         );
 
         if (status != 0) {
@@ -77,51 +79,31 @@ public final class GridReader {
         int dataLength = cellsX * cellsY;
         int numRanges = numberOfRangesOutput.get(C_INT, 0);
 
-        // Now retrieve with data
-        MemorySegment pathnameInput2 = arena.allocateFrom(pathname.toString());
-        MemorySegment typeOutput2 = arena.allocate(C_INT, 1);
-        MemorySegment dataTypeOutput2 = arena.allocate(C_INT, 1);
-        MemorySegment lowerLeftCellXOutput2 = arena.allocate(C_INT, 1);
-        MemorySegment lowerLeftCellYOutput2 = arena.allocate(C_INT, 1);
-        MemorySegment numberOfCellsXOutput2 = arena.allocate(C_INT, 1);
-        MemorySegment numberOfCellsYOutput2 = arena.allocate(C_INT, 1);
-        MemorySegment numberOfRangesOutput2 = arena.allocate(C_INT, 1);
-        MemorySegment srsDefinitionTypeOutput2 = arena.allocate(C_INT, 1);
-        MemorySegment timeZoneRawOffsetOutput2 = arena.allocate(C_INT, 1);
-        MemorySegment isIntervalOutput2 = arena.allocate(C_INT, 1);
-        MemorySegment isTimeStampedOutput2 = arena.allocate(C_INT, 1);
-        MemorySegment dataUnitsOutput2 = arena.allocate(C_CHAR, STRING_BUFFER_LENGTH);
-        MemorySegment dataSourceOutput2 = arena.allocate(C_CHAR, STRING_BUFFER_LENGTH);
-        MemorySegment srsNameOutput2 = arena.allocate(C_CHAR, STRING_BUFFER_LENGTH);
-        MemorySegment srsDefinitionOutput2 = arena.allocate(C_CHAR, SRS_DEFINITION_BUFFER_LENGTH);
-        MemorySegment timeZoneIDOutput2 = arena.allocate(C_CHAR, STRING_BUFFER_LENGTH);
-        MemorySegment cellSizeOutput2 = arena.allocate(C_FLOAT, 1);
-        MemorySegment xCoordOutput2 = arena.allocate(C_FLOAT, 1);
-        MemorySegment yCoordOutput2 = arena.allocate(C_FLOAT, 1);
-        MemorySegment nullValueOutput2 = arena.allocate(C_FLOAT, 1);
-        MemorySegment maxDataValueOutput2 = arena.allocate(C_FLOAT, 1);
-        MemorySegment minDataValueOutput2 = arena.allocate(C_FLOAT, 1);
-        MemorySegment meanDataValueOutput2 = arena.allocate(C_FLOAT, 1);
-        MemorySegment rangeLimitTableOutput2 = arena.allocate(C_FLOAT, Math.max(numRanges, 1));
-        MemorySegment rangeExceedanceOutput2 = arena.allocate(C_INT, Math.max(numRanges, 1));
+        // Second call: retrieve with data, reusing all metadata segments
+        MemorySegment rangeLimitSized = numRanges > 0 && numRanges <= MAX_RANGES
+                ? rangeLimitTableOutput
+                : arena.allocate(C_FLOAT, Math.max(numRanges, 1));
+        MemorySegment rangeExceedSized = numRanges > 0 && numRanges <= MAX_RANGES
+                ? rangeExceedanceOutput
+                : arena.allocate(C_INT, Math.max(numRanges, 1));
         MemorySegment fullDataOutput = arena.allocate(C_FLOAT, Math.max(dataLength, 1));
 
         status = hecdss_h.hec_dss_gridRetrieve(
-                session.dssPointer(), pathnameInput2, 1,
-                typeOutput2, dataTypeOutput2,
-                lowerLeftCellXOutput2, lowerLeftCellYOutput2,
-                numberOfCellsXOutput2, numberOfCellsYOutput2,
-                numberOfRangesOutput2, srsDefinitionTypeOutput2,
-                timeZoneRawOffsetOutput2, isIntervalOutput2, isTimeStampedOutput2,
-                dataUnitsOutput2, STRING_BUFFER_LENGTH,
-                dataSourceOutput2, STRING_BUFFER_LENGTH,
-                srsNameOutput2, STRING_BUFFER_LENGTH,
-                srsDefinitionOutput2, SRS_DEFINITION_BUFFER_LENGTH,
-                timeZoneIDOutput2, STRING_BUFFER_LENGTH,
-                cellSizeOutput2, xCoordOutput2, yCoordOutput2,
-                nullValueOutput2, maxDataValueOutput2, minDataValueOutput2, meanDataValueOutput2,
-                rangeLimitTableOutput2, numRanges,
-                rangeExceedanceOutput2,
+                session.dssPointer(), pathnameInput, 1,
+                typeOutput, dataTypeOutput,
+                lowerLeftCellXOutput, lowerLeftCellYOutput,
+                numberOfCellsXOutput, numberOfCellsYOutput,
+                numberOfRangesOutput, srsDefinitionTypeOutput,
+                timeZoneRawOffsetOutput, isIntervalOutput, isTimeStampedOutput,
+                dataUnitsOutput, STRING_BUFFER_LENGTH,
+                dataSourceOutput, STRING_BUFFER_LENGTH,
+                srsNameOutput, STRING_BUFFER_LENGTH,
+                srsDefinitionOutput, SRS_DEFINITION_BUFFER_LENGTH,
+                timeZoneIDOutput, STRING_BUFFER_LENGTH,
+                cellSizeOutput, xCoordOutput, yCoordOutput,
+                nullValueOutput, maxDataValueOutput, minDataValueOutput, meanDataValueOutput,
+                rangeLimitSized, numRanges,
+                rangeExceedSized,
                 fullDataOutput, dataLength
         );
 
@@ -137,41 +119,41 @@ public final class GridReader {
                 : new float[0];
 
         float[] rangeTable = numRanges > 0
-                ? rangeLimitTableOutput2.asSlice(0, (long) numRanges * ValueLayout.JAVA_FLOAT.byteSize())
+                ? rangeLimitSized.asSlice(0, (long) numRanges * ValueLayout.JAVA_FLOAT.byteSize())
                     .toArray(ValueLayout.JAVA_FLOAT)
                 : new float[0];
         int[] rangeExceedance = numRanges > 0
-                ? rangeExceedanceOutput2.asSlice(0, (long) numRanges * ValueLayout.JAVA_INT.byteSize())
+                ? rangeExceedSized.asSlice(0, (long) numRanges * ValueLayout.JAVA_INT.byteSize())
                     .toArray(ValueLayout.JAVA_INT)
                 : new int[0];
 
         DssGridInfo info = new DssGridInfo(
-                typeOutput2.get(C_INT, 0),
-                dataTypeOutput2.get(C_INT, 0),
-                lowerLeftCellXOutput2.get(C_INT, 0),
-                lowerLeftCellYOutput2.get(C_INT, 0),
+                typeOutput.get(C_INT, 0),
+                dataTypeOutput.get(C_INT, 0),
+                lowerLeftCellXOutput.get(C_INT, 0),
+                lowerLeftCellYOutput.get(C_INT, 0),
                 cellsX, cellsY,
                 numRanges,
-                cellSizeOutput2.get(C_FLOAT, 0),
-                xCoordOutput2.get(C_FLOAT, 0),
-                yCoordOutput2.get(C_FLOAT, 0),
-                isIntervalOutput2.get(C_INT, 0) != 0,
-                isTimeStampedOutput2.get(C_INT, 0) != 0,
-                timeZoneIDOutput2.getString(0),
-                timeZoneRawOffsetOutput2.get(C_INT, 0)
+                cellSizeOutput.get(C_FLOAT, 0),
+                xCoordOutput.get(C_FLOAT, 0),
+                yCoordOutput.get(C_FLOAT, 0),
+                isIntervalOutput.get(C_INT, 0) != 0,
+                isTimeStampedOutput.get(C_INT, 0) != 0,
+                timeZoneIDOutput.getString(0),
+                timeZoneRawOffsetOutput.get(C_INT, 0)
         );
 
         DssGridSpatialReference srs = new DssGridSpatialReference(
-                srsNameOutput2.getString(0),
-                srsDefinitionOutput2.getString(0),
-                srsDefinitionTypeOutput2.get(C_INT, 0)
+                srsNameOutput.getString(0),
+                srsDefinitionOutput.getString(0),
+                srsDefinitionTypeOutput.get(C_INT, 0)
         );
 
         DssGridStatistics stats = new DssGridStatistics(
-                nullValueOutput2.get(C_FLOAT, 0),
-                maxDataValueOutput2.get(C_FLOAT, 0),
-                minDataValueOutput2.get(C_FLOAT, 0),
-                meanDataValueOutput2.get(C_FLOAT, 0),
+                nullValueOutput.get(C_FLOAT, 0),
+                maxDataValueOutput.get(C_FLOAT, 0),
+                minDataValueOutput.get(C_FLOAT, 0),
+                meanDataValueOutput.get(C_FLOAT, 0),
                 rangeTable, rangeExceedance
         );
 

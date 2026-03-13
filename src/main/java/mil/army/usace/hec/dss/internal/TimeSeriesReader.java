@@ -1,5 +1,6 @@
 package mil.army.usace.hec.dss.internal;
 
+import mil.army.usace.hec.dss.DssConstants;
 import mil.army.usace.hec.dss.DssPathname;
 import mil.army.usace.hec.dss.DssException;
 import mil.army.usace.hec.dss.DssTimeSeries;
@@ -15,11 +16,7 @@ import java.time.ZoneOffset;
 import static mil.army.usace.hec.dss.internal.hecdss_h$shared.*;
 
 public final class TimeSeriesReader {
-    private static final int UNITS_BUFFER_LENGTH = 100;
-    private static final int DATA_TYPE_BUFFER_LENGTH = 100;
-    private static final int TIMEZONE_BUFFER_LENGTH = 100;
-    private static final long BASE_EPOCH_SECONDS =
-            OffsetDateTime.of(1899, 12, 31, 0, 0, 0, 0, ZoneOffset.UTC).toEpochSecond();
+    private static final int STRING_BUFFER_LENGTH = NativeBuffers.STRING_BUFFER_LENGTH;
 
     private TimeSeriesReader() {}
 
@@ -49,9 +46,9 @@ public final class TimeSeriesReader {
         MemorySegment qualityOutput = arena.allocate(C_INT, numberValues);
         MemorySegment julianBaseDateOutput = arena.allocate(C_INT, 1);
         MemorySegment timeGranularitySecondsOutput = arena.allocate(C_INT, 1);
-        MemorySegment unitsOutput = arena.allocate(C_CHAR, UNITS_BUFFER_LENGTH);
-        MemorySegment typeOutput = arena.allocate(C_CHAR, DATA_TYPE_BUFFER_LENGTH);
-        MemorySegment timezoneOutput = arena.allocate(C_CHAR, TIMEZONE_BUFFER_LENGTH);
+        MemorySegment unitsOutput = arena.allocate(C_CHAR, STRING_BUFFER_LENGTH);
+        MemorySegment typeOutput = arena.allocate(C_CHAR, STRING_BUFFER_LENGTH);
+        MemorySegment timezoneOutput = arena.allocate(C_CHAR, STRING_BUFFER_LENGTH);
 
         int status = hecdss_h.hec_dss_tsRetrieve(
                 session.dssPointer(), pathnameInput,
@@ -59,9 +56,9 @@ public final class TimeSeriesReader {
                 timeArrayOutput, valueArrayOutput, numberValues,
                 numberValuesReadOutput, qualityOutput, qualityWidth,
                 julianBaseDateOutput, timeGranularitySecondsOutput,
-                unitsOutput, UNITS_BUFFER_LENGTH,
-                typeOutput, DATA_TYPE_BUFFER_LENGTH,
-                timezoneOutput, TIMEZONE_BUFFER_LENGTH
+                unitsOutput, STRING_BUFFER_LENGTH,
+                typeOutput, STRING_BUFFER_LENGTH,
+                timezoneOutput, STRING_BUFFER_LENGTH
         );
 
         if (status != 0) {
@@ -85,7 +82,7 @@ public final class TimeSeriesReader {
 
         long[] epochSeconds = new long[count];
         for (int i = 0; i < count; i++) {
-            epochSeconds[i] = BASE_EPOCH_SECONDS + (long) timeDeltas[i] * granularity;
+            epochSeconds[i] = DssConstants.BASE_EPOCH_SECONDS + (long) timeDeltas[i] * granularity;
         }
 
         return new DssTimeSeries(values, epochSeconds, units, type);
