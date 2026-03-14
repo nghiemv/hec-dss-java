@@ -52,7 +52,7 @@ public final class CrsMapping {
         return switch (crs) {
             case WGS84 -> new NativeCodes(CS_GEOGRAPHIC, 0, LU_DEGREES, HD_WGS84, LU_NONE, HD_NONE);
             case NAD83 -> new NativeCodes(CS_GEOGRAPHIC, 0, LU_DEGREES, HD_NAD83, LU_NONE, HD_NONE);
-            case NONE -> new NativeCodes(CS_NONE, 0, LU_NONE, HD_NONE, LU_NONE, HD_NONE);
+            case NONE, SHG, HRAP, ALBERS -> new NativeCodes(CS_NONE, 0, LU_NONE, HD_NONE, LU_NONE, HD_NONE);
         };
     }
 }

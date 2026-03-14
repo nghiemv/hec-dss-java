@@ -14,8 +14,9 @@ class HecDssGridReadTest {
         String pathname = "/grid/EAU GALLA RIVER/SNOW MELT/02FEB2020:0600/03FEB2020:0600/SHG-SNODAS/";
 
         DssGrid grid = HecDss.readGrid(dssFile, pathname);
-        assertEquals(21, grid.numberOfCellsX());
-        assertEquals(28, grid.numberOfCellsY());
-        assertEquals(21 * 28, grid.data().length);
+        assertEquals(21, grid.width());
+        assertEquals(28, grid.height());
+        assertEquals(21, grid.values()[0].length);
+        assertEquals(28, grid.values().length);
     }
 }

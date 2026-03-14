@@ -14,6 +14,6 @@ class HecDssLocationInfoReadTest {
         String pathname = "/MISSISSIPPI/ST. LOUIS/Location Info////";
 
         DssLocationInfo loc = HecDss.readLocationInfo(dssFile, pathname);
-        assertNotNull(loc.timeZoneName());
+        assertNotNull(loc.crs());
     }
 }

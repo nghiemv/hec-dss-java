@@ -7,6 +7,7 @@ import mil.army.usace.hec.dss.DssPathname;
 
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
+import java.time.ZoneId;
 
 import static mil.army.usace.hec.dss.internal.hecdss_h$shared.*;
 
@@ -57,12 +58,22 @@ public final class LocationInfoReader {
                 verticalDatumOutput.get(C_INT, 0)
         );
 
+        String timezoneStr = timezoneOutput.getString(0);
+        ZoneId timeZone = null;
+        if (!timezoneStr.isEmpty()) {
+            try {
+                timeZone = ZoneId.of(timezoneStr);
+            } catch (Exception ignored) {
+                // Malformed timezone string from DSS — leave as null
+            }
+        }
+
         return new DssLocationInfo(
                 xOutput.get(C_DOUBLE, 0),
                 yOutput.get(C_DOUBLE, 0),
                 zOutput.get(C_DOUBLE, 0),
                 crs,
-                timezoneOutput.getString(0),
+                timeZone,
                 supplementalOutput.getString(0)
         );
     }

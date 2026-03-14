@@ -14,49 +14,131 @@ public final class GridWriter {
 
     public static void write(DssSession session, DssPathname pathname, DssGrid grid) {
         Arena arena = session.arena();
+        NativeGridMetadata meta = grid.nativeMetadata();
 
-        // Narrow double→float and convert NaN→sentinel
-        double[] doubleData = grid.data();
-        float[] nativeData = new float[doubleData.length];
-        for (int i = 0; i < doubleData.length; i++) {
-            nativeData[i] = Double.isNaN(doubleData[i]) ? NULL_SENTINEL : (float) doubleData[i];
+        int width = grid.width();
+        int height = grid.height();
+        double[][] values = grid.values();
+
+        // Flatten double[][] (top-to-bottom) → float[] (bottom-to-top) for native DSS
+        float[] nativeData = new float[width * height];
+        for (int row = 0; row < height; row++) {
+            int dstRow = height - 1 - row; // flip: row 0 (north) → last native row
+            for (int col = 0; col < width; col++) {
+                double v = values[row][col];
+                nativeData[dstRow * width + col] = Double.isNaN(v) ? NULL_SENTINEL : (float) v;
+            }
         }
 
-        DssGrid.RangeHistogram histogram = grid.rangeHistogram();
-        double[] doubleLimits = histogram.limits();
-        float[] nativeRangeTable = new float[doubleLimits.length];
-        for (int i = 0; i < doubleLimits.length; i++) {
-            nativeRangeTable[i] = (float) doubleLimits[i];
+        // Resolve native fields — round-trip uses stored metadata, user-constructed derives them
+        int gridTypeCode;
+        int lowerLeftCellX, lowerLeftCellY;
+        double xOrigin, yOrigin;
+        int srsDefinitionType;
+        String srsName, srsDefinition, timeZoneId, dataSource;
+        boolean isInterval, isTimeStamped;
+        float maxVal, minVal, meanVal;
+        float[] nativeRangeTable;
+        int[] rangeExceedance;
+        int numRanges;
+
+        if (meta != null) {
+            // Round-trip: use stored native metadata
+            gridTypeCode = meta.gridTypeCode();
+            lowerLeftCellX = meta.lowerLeftCellX();
+            lowerLeftCellY = meta.lowerLeftCellY();
+            xOrigin = meta.xCoordOfGridCellZero();
+            yOrigin = meta.yCoordOfGridCellZero();
+            srsDefinitionType = meta.srsDefinitionType();
+            srsName = meta.srsName();
+            srsDefinition = meta.srsDefinition();
+            isInterval = meta.isInterval();
+            isTimeStamped = meta.isTimeStamped();
+            timeZoneId = meta.timeZoneId();
+            dataSource = meta.dataSource();
+            maxVal = (float) meta.maxDataValue();
+            minVal = (float) meta.minDataValue();
+            meanVal = (float) meta.meanDataValue();
+
+            RangeHistogram histogram = meta.rangeHistogram();
+            double[] doubleLimits = histogram.limits();
+            nativeRangeTable = new float[doubleLimits.length];
+            for (int i = 0; i < doubleLimits.length; i++) {
+                nativeRangeTable[i] = (float) doubleLimits[i];
+            }
+            rangeExceedance = histogram.exceedanceCounts();
+            numRanges = histogram.size();
+        } else {
+            // User-constructed: derive native fields from coordinate arrays
+            double cellSize = grid.cellSize();
+            double[] x = grid.x();
+            double[] y = grid.y();
+
+            lowerLeftCellX = 0;
+            lowerLeftCellY = 0;
+            xOrigin = x[0] - 0.5 * cellSize;
+            yOrigin = y[height - 1] - 0.5 * cellSize; // y[height-1] = southernmost
+
+            GridType gridType = GridType.fromCrs(grid.crs(), false);
+            gridTypeCode = gridType.code();
+            srsDefinitionType = 0;
+            srsName = "";
+            srsDefinition = "";
+            isInterval = false;
+            isTimeStamped = false;
+            timeZoneId = "";
+            dataSource = "";
+
+            // Compute statistics from data
+            float min = Float.MAX_VALUE;
+            float max = -Float.MAX_VALUE;
+            double sum = 0;
+            int count = 0;
+            for (float v : nativeData) {
+                if (v != NULL_SENTINEL) {
+                    min = Math.min(min, v);
+                    max = Math.max(max, v);
+                    sum += v;
+                    count++;
+                }
+            }
+            maxVal = count > 0 ? max : 0;
+            minVal = count > 0 ? min : 0;
+            meanVal = count > 0 ? (float) (sum / count) : 0;
+
+            nativeRangeTable = new float[0];
+            rangeExceedance = new int[0];
+            numRanges = 0;
         }
 
         MemorySegment pathnameInput = arena.allocateFrom(pathname.toString());
-        MemorySegment dataUnitsInput = arena.allocateFrom("");
-        MemorySegment dataSourceInput = arena.allocateFrom("");
-        MemorySegment srsNameInput = arena.allocateFrom(grid.srsName());
-        MemorySegment srsDefinitionInput = arena.allocateFrom(grid.srsDefinition());
-        MemorySegment timeZoneIdInput = arena.allocateFrom(grid.timeZoneId());
+        MemorySegment dataUnitsInput = arena.allocateFrom(grid.units());
+        MemorySegment dataSourceInput = arena.allocateFrom(dataSource);
+        MemorySegment srsNameInput = arena.allocateFrom(srsName);
+        MemorySegment srsDefinitionInput = arena.allocateFrom(srsDefinition);
+        MemorySegment timeZoneIdInput = arena.allocateFrom(timeZoneId);
 
         MemorySegment rangeLimitInput = NativeBuffers.allocateFloats(arena, nativeRangeTable);
-        MemorySegment rangeExceedInput = NativeBuffers.allocateInts(arena, histogram.exceedanceCounts());
+        MemorySegment rangeExceedInput = NativeBuffers.allocateInts(arena, rangeExceedance);
         MemorySegment dataInput = NativeBuffers.allocateFloats(arena, nativeData);
 
         int status = hecdss_h.hec_dss_gridStore(
                 session.dssPointer(), pathnameInput,
-                grid.gridType().code(), grid.dataType().code(),
-                grid.lowerLeftCellX(), grid.lowerLeftCellY(),
-                grid.numberOfCellsX(), grid.numberOfCellsY(),
-                histogram.size(),
-                grid.srsDefinitionType(),
+                gridTypeCode, grid.dataType().code(),
+                lowerLeftCellX, lowerLeftCellY,
+                width, height,
+                numRanges,
+                srsDefinitionType,
                 0, // timeZoneRawOffset — computed by native library
-                grid.isInterval() ? 1 : 0,
-                grid.isTimeStamped() ? 1 : 0,
+                isInterval ? 1 : 0,
+                isTimeStamped ? 1 : 0,
                 0, // compressionSize
                 dataUnitsInput, dataSourceInput,
                 srsNameInput, srsDefinitionInput, timeZoneIdInput,
                 (float) grid.cellSize(),
-                (float) grid.xCoordOfGridCellZero(), (float) grid.yCoordOfGridCellZero(),
+                (float) xOrigin, (float) yOrigin,
                 NULL_SENTINEL,
-                (float) grid.maxDataValue(), (float) grid.minDataValue(), (float) grid.meanDataValue(),
+                maxVal, minVal, meanVal,
                 rangeLimitInput, rangeExceedInput,
                 dataInput
         );

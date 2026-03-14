@@ -3,6 +3,7 @@ package mil.army.usace.hec.dss;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
+import java.time.ZoneId;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -13,14 +14,14 @@ class HecDssLocationInfoWriteTest {
         Path dssFile = TestUtil.createTempFile("location-test.dss");
         String pathname = "/TEST/LOCATION/DATA///LOC-TEST/";
 
-        DssLocationInfo input = DssLocationInfo.of(38.5, -121.5, 100.0, "UTC");
+        DssLocationInfo input = DssLocationInfo.of(38.5, -121.5, 100.0, ZoneId.of("UTC"));
 
         HecDss.writeLocationInfo(dssFile, pathname, input);
 
         DssLocationInfo output = HecDss.readLocationInfo(dssFile, pathname);
-        assertEquals(-121.5, output.x(), 0.001);
-        assertEquals(38.5, output.y(), 0.001);
-        assertEquals(100.0, output.z(), 0.001);
+        assertEquals(-121.5, output.longitude(), 0.001);
+        assertEquals(38.5, output.latitude(), 0.001);
+        assertEquals(100.0, output.elevation(), 0.001);
     }
 
     @Test
@@ -33,12 +34,12 @@ class HecDssLocationInfoWriteTest {
         HecDss.writeLocationInfo(dssFile, writePath, original);
 
         DssLocationInfo reread = HecDss.readLocationInfo(dssFile, writePath);
-        assertEquals(original.x(), reread.x(), 0.001);
-        assertEquals(original.y(), reread.y(), 0.001);
-        assertEquals(original.z(), reread.z(), 0.001);
+        assertEquals(original.longitude(), reread.longitude(), 0.001);
+        assertEquals(original.latitude(), reread.latitude(), 0.001);
+        assertEquals(original.elevation(), reread.elevation(), 0.001);
         assertEquals(original.crs(), reread.crs());
-        assertEquals(original.timeZoneName(), reread.timeZoneName());
-        assertEquals(original.supplemental(), reread.supplemental());
+        assertEquals(original.timeZone(), reread.timeZone());
+        assertEquals(original.description(), reread.description());
     }
 
     @Test
@@ -50,13 +51,13 @@ class HecDssLocationInfoWriteTest {
         DssLocationInfo original = HecDss.readLocationInfo(dssFile, readPath);
 
         DssLocationInfo modified = new DssLocationInfo(
-                original.x() + 1.0, original.y(), original.z(),
+                original.longitude() + 1.0, original.latitude(), original.elevation(),
                 original.crs(),
-                original.timeZoneName(), original.supplemental()
+                original.timeZone(), original.description()
         );
         HecDss.writeLocationInfo(dssFile, writePath, modified);
 
         DssLocationInfo reread = HecDss.readLocationInfo(dssFile, writePath);
-        assertEquals(original.x() + 1.0, reread.x(), 0.001);
+        assertEquals(original.longitude() + 1.0, reread.longitude(), 0.001);
     }
 }

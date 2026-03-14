@@ -4,12 +4,11 @@ package mil.army.usace.hec.dss;
  * What the cell values in a grid represent over time.
  */
 public enum GridDataType {
-    PER_AVER(0),
-    PER_CUM(1),
-    INST_VAL(2),
-    INST_CUM(3),
-    FREQ(4),
-    INVALID(5);
+    PERIOD_AVERAGE(0),
+    PERIOD_CUMULATIVE(1),
+    INSTANTANEOUS(2),
+    INSTANTANEOUS_CUMULATIVE(3),
+    FREQUENCY(4);
 
     private final int code;
 
@@ -23,6 +22,6 @@ public enum GridDataType {
         for (GridDataType t : values()) {
             if (t.code == code) return t;
         }
-        return INVALID;
+        return PERIOD_AVERAGE;
     }
 }

@@ -18,12 +18,13 @@ public final class LocationInfoWriter {
         CrsMapping.NativeCodes codes = CrsMapping.fromCrs(info.crs());
 
         MemorySegment pathnameInput = arena.allocateFrom(pathname.toString());
-        MemorySegment timezoneInput = arena.allocateFrom(info.timeZoneName());
-        MemorySegment supplementalInput = arena.allocateFrom(info.supplemental());
+        String timezoneStr = info.timeZone() != null ? info.timeZone().getId() : "";
+        MemorySegment timezoneInput = arena.allocateFrom(timezoneStr);
+        MemorySegment supplementalInput = arena.allocateFrom(info.description());
 
         int status = hecdss_h.hec_dss_locationStore(
                 session.dssPointer(), pathnameInput,
-                info.x(), info.y(), info.z(),
+                info.longitude(), info.latitude(), info.elevation(),
                 codes.coordinateSystem(), codes.coordinateId(),
                 codes.horizontalUnits(), codes.horizontalDatum(),
                 codes.verticalUnits(), codes.verticalDatum(),

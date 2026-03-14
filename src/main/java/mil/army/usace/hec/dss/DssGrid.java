@@ -1,176 +1,129 @@
 package mil.army.usace.hec.dss;
 
+import mil.army.usace.hec.dss.internal.NativeGridMetadata;
+
+import java.util.Arrays;
 import java.util.Objects;
 
 /**
  * Gridded (raster) data read from or written to a DSS file.
- * Contains cell data, grid dimensions, spatial reference, and statistics.
+ *
+ * <p>A grid has five essential concepts:
+ * <ul>
+ *   <li>{@link #values()} — cell data as {@code double[][]}, row-major, row 0 = north</li>
+ *   <li>{@link #x()} — column center coordinates (west → east)</li>
+ *   <li>{@link #y()} — row center coordinates (north → south)</li>
+ *   <li>{@link #units()} — data units (e.g. "MM", "IN")</li>
+ *   <li>{@link #crs()} — coordinate reference system</li>
+ * </ul>
  *
  * <p>Missing cell values are represented as {@link Double#NaN}.
  *
- * <p>Create grids with {@link #of(double[], int, int, double, double, double)}:
+ * <p>Create grids with {@link #of(double[][], double[], double[], String, Crs)}:
  * <pre>{@code
- * DssGrid grid = DssGrid.of(data, 50, 50, 2000.0, 0.0, 0.0)
- *         .withSrs("WKT", wktString)
- *         .withTimeZone("UTC");
+ * DssGrid grid = DssGrid.of(values, x, y, "MM", Crs.SHG);
  * }</pre>
  */
 public final class DssGrid {
-    private final double[] data;
-
-    // Grid info
-    private final GridType gridType;
+    private final double[][] values;
+    private final double[] x;
+    private final double[] y;
+    private final String units;
+    private final Crs crs;
     private final GridDataType dataType;
-    private final int lowerLeftCellX;
-    private final int lowerLeftCellY;
-    private final int numberOfCellsX;
-    private final int numberOfCellsY;
-    private final double cellSize;
-    private final double xCoordOfGridCellZero;
-    private final double yCoordOfGridCellZero;
-    private final boolean isInterval;
-    private final boolean isTimeStamped;
-    private final String timeZoneId;
+    private final NativeGridMetadata nativeMetadata; // null for user-constructed grids
 
-    // Spatial reference
-    private final String srsName;
-    private final String srsDefinition;
-    private final int srsDefinitionType;
-
-    // Statistics
-    private final double maxDataValue;
-    private final double minDataValue;
-    private final double meanDataValue;
-    private final RangeHistogram rangeHistogram;
-
-    /**
-     * Histogram of cell values used by the native DSS library for compression.
-     */
-    public record RangeHistogram(double[] limits, int[] exceedanceCounts) {
-        public static final RangeHistogram EMPTY = new RangeHistogram(new double[0], new int[0]);
-
-        public RangeHistogram {
-            limits = Objects.requireNonNull(limits).clone();
-            exceedanceCounts = Objects.requireNonNull(exceedanceCounts).clone();
-        }
-
-        @Override public double[] limits() { return limits.clone(); }
-        @Override public int[] exceedanceCounts() { return exceedanceCounts.clone(); }
-
-        public int size() { return limits.length; }
-    }
-
-    public DssGrid(double[] data,
-                   GridType gridType, GridDataType dataType,
-                   int lowerLeftCellX, int lowerLeftCellY,
-                   int numberOfCellsX, int numberOfCellsY,
-                   double cellSize, double xCoordOfGridCellZero, double yCoordOfGridCellZero,
-                   boolean isInterval, boolean isTimeStamped,
-                   String timeZoneId,
-                   String srsName, String srsDefinition, int srsDefinitionType,
-                   double maxDataValue, double minDataValue, double meanDataValue,
-                   RangeHistogram rangeHistogram) {
-        this.data = Objects.requireNonNull(data).clone();
-        this.gridType = Objects.requireNonNull(gridType);
+    private DssGrid(double[][] values, double[] x, double[] y,
+                    String units, Crs crs, GridDataType dataType,
+                    NativeGridMetadata nativeMetadata) {
+        this.values = deepCopy(Objects.requireNonNull(values));
+        this.x = Objects.requireNonNull(x).clone();
+        this.y = Objects.requireNonNull(y).clone();
+        this.units = Objects.requireNonNull(units);
+        this.crs = Objects.requireNonNull(crs);
         this.dataType = Objects.requireNonNull(dataType);
-        this.lowerLeftCellX = lowerLeftCellX;
-        this.lowerLeftCellY = lowerLeftCellY;
-        this.numberOfCellsX = numberOfCellsX;
-        this.numberOfCellsY = numberOfCellsY;
-        this.cellSize = cellSize;
-        this.xCoordOfGridCellZero = xCoordOfGridCellZero;
-        this.yCoordOfGridCellZero = yCoordOfGridCellZero;
-        this.isInterval = isInterval;
-        this.isTimeStamped = isTimeStamped;
-        this.timeZoneId = Objects.requireNonNull(timeZoneId);
-        this.srsName = Objects.requireNonNull(srsName);
-        this.srsDefinition = Objects.requireNonNull(srsDefinition);
-        this.srsDefinitionType = srsDefinitionType;
-        this.maxDataValue = maxDataValue;
-        this.minDataValue = minDataValue;
-        this.meanDataValue = meanDataValue;
-        this.rangeHistogram = Objects.requireNonNull(rangeHistogram);
-    }
+        this.nativeMetadata = nativeMetadata;
 
-    /**
-     * Creates a grid with sensible defaults. Statistics are computed from the data.
-     */
-    public static DssGrid of(double[] data, int cellsX, int cellsY,
-                             double cellSize, double xOrigin, double yOrigin) {
-        double min = Double.MAX_VALUE;
-        double max = -Double.MAX_VALUE;
-        double sum = 0;
-        int count = 0;
-        for (double v : data) {
-            if (!Double.isNaN(v)) {
-                min = Math.min(min, v);
-                max = Math.max(max, v);
-                sum += v;
-                count++;
-            }
+        if (values.length > 0 && values[0].length != x.length) {
+            throw new IllegalArgumentException(
+                    "x length (%d) must match column count (%d)".formatted(x.length, values[0].length));
         }
-        double mean = count > 0 ? sum / count : 0;
-        if (count == 0) { min = 0; max = 0; }
-
-        return new DssGrid(data,
-                GridType.ALBERS, GridDataType.PER_AVER, 0, 0, cellsX, cellsY,
-                cellSize, xOrigin, yOrigin, false, false, "",
-                "", "", 0,
-                max, min, mean,
-                RangeHistogram.EMPTY);
+        if (values.length != y.length) {
+            throw new IllegalArgumentException(
+                    "y length (%d) must match row count (%d)".formatted(y.length, values.length));
+        }
     }
 
     /**
-     * Returns a new grid with spatial reference set.
+     * Creates a grid from user data.
+     *
+     * @param values cell data, row-major, row 0 = north
+     * @param x      column center coordinates (west → east)
+     * @param y      row center coordinates (north → south)
+     * @param units  data units (e.g. "MM")
+     * @param crs    coordinate reference system
      */
-    public DssGrid withSrs(String name, String wktDefinition) {
-        return new DssGrid(data, gridType, dataType,
-                lowerLeftCellX, lowerLeftCellY, numberOfCellsX, numberOfCellsY,
-                cellSize, xCoordOfGridCellZero, yCoordOfGridCellZero, isInterval, isTimeStamped,
-                timeZoneId,
-                name, wktDefinition, 0,
-                maxDataValue, minDataValue, meanDataValue,
-                rangeHistogram);
+    public static DssGrid of(double[][] values, double[] x, double[] y,
+                              String units, Crs crs) {
+        return new DssGrid(values, x, y, units, crs, GridDataType.PERIOD_AVERAGE, null);
     }
 
     /**
-     * Returns a new grid with time zone set.
+     * Internal factory for GridReader — preserves native metadata for round-trip.
+     * Not part of the public API.
      */
-    public DssGrid withTimeZone(String timeZoneId) {
-        return new DssGrid(data, gridType, dataType,
-                lowerLeftCellX, lowerLeftCellY, numberOfCellsX, numberOfCellsY,
-                cellSize, xCoordOfGridCellZero, yCoordOfGridCellZero, isInterval, isTimeStamped,
-                timeZoneId,
-                srsName, srsDefinition, srsDefinitionType,
-                maxDataValue, minDataValue, meanDataValue,
-                rangeHistogram);
+    public static DssGrid fromNative(double[][] values, double[] x, double[] y,
+                                     String units, Crs crs, GridDataType dataType,
+                                     NativeGridMetadata nativeMetadata) {
+        return new DssGrid(values, x, y, units, crs, dataType, nativeMetadata);
     }
 
-    // Data
-    public double[] data() { return data.clone(); }
+    // ---- Core data ----
 
-    // Grid info
-    public GridType gridType() { return gridType; }
+    /** Cell data as row-major 2D array. Row 0 = north, row {@code height()-1} = south. */
+    public double[][] values() { return deepCopy(values); }
+
+    /** Column center coordinates, west → east. Length = {@link #width()}. */
+    public double[] x() { return x.clone(); }
+
+    /** Row center coordinates, north → south. Length = {@link #height()}. */
+    public double[] y() { return y.clone(); }
+
+    /** Data units (e.g. "MM", "IN"). */
+    public String units() { return units; }
+
+    /** Coordinate reference system. */
+    public Crs crs() { return crs; }
+
+    /** What the cell values represent over time. */
     public GridDataType dataType() { return dataType; }
-    public int lowerLeftCellX() { return lowerLeftCellX; }
-    public int lowerLeftCellY() { return lowerLeftCellY; }
-    public int numberOfCellsX() { return numberOfCellsX; }
-    public int numberOfCellsY() { return numberOfCellsY; }
-    public double cellSize() { return cellSize; }
-    public double xCoordOfGridCellZero() { return xCoordOfGridCellZero; }
-    public double yCoordOfGridCellZero() { return yCoordOfGridCellZero; }
-    public boolean isInterval() { return isInterval; }
-    public boolean isTimeStamped() { return isTimeStamped; }
-    public String timeZoneId() { return timeZoneId; }
 
-    // Spatial reference
-    public String srsName() { return srsName; }
-    public String srsDefinition() { return srsDefinition; }
-    public int srsDefinitionType() { return srsDefinitionType; }
+    // ---- Convenience ----
 
-    // Statistics
-    public double maxDataValue() { return maxDataValue; }
-    public double minDataValue() { return minDataValue; }
-    public double meanDataValue() { return meanDataValue; }
-    public RangeHistogram rangeHistogram() { return rangeHistogram; }
+    /** Number of columns. */
+    public int width() { return x.length; }
+
+    /** Number of rows. */
+    public int height() { return y.length; }
+
+    /** Single cell value. Row 0 = north. */
+    public double value(int row, int col) { return values[row][col]; }
+
+    /** Cell spacing. Derived from x coordinates. Returns 0 if fewer than 2 columns. */
+    public double cellSize() {
+        return x.length >= 2 ? Math.abs(x[1] - x[0]) : 0;
+    }
+
+    // ---- Internal ----
+
+    /** Not part of the public API. Used by GridWriter for round-trip fidelity. */
+    public NativeGridMetadata nativeMetadata() { return nativeMetadata; }
+
+    private static double[][] deepCopy(double[][] src) {
+        double[][] copy = new double[src.length][];
+        for (int i = 0; i < src.length; i++) {
+            copy[i] = src[i].clone();
+        }
+        return copy;
+    }
 }

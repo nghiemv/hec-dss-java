@@ -113,6 +113,8 @@ public final class GridReader {
                             .formatted(pathname, session.filePath(), status));
         }
 
+        // Extract native values
+        float nullValue = nullValueOutput.get(C_FLOAT, 0);
         float[] nativeData = dataLength > 0
                 ? fullDataOutput.asSlice(0, (long) dataLength * ValueLayout.JAVA_FLOAT.byteSize())
                     .toArray(ValueLayout.JAVA_FLOAT)
@@ -127,33 +129,60 @@ public final class GridReader {
                     .toArray(ValueLayout.JAVA_INT)
                 : new int[0];
 
-        // Widen float→double and convert null sentinel → NaN
-        float nullValue = nullValueOutput.get(C_FLOAT, 0);
-        double[] data = new double[nativeData.length];
-        for (int i = 0; i < nativeData.length; i++) {
-            data[i] = (nativeData[i] == nullValue) ? Double.NaN : nativeData[i];
+        double cellSize = cellSizeOutput.get(C_FLOAT, 0);
+        double xOrigin = xCoordOutput.get(C_FLOAT, 0);
+        double yOrigin = yCoordOutput.get(C_FLOAT, 0);
+        int lowerLeftCellX = lowerLeftCellXOutput.get(C_INT, 0);
+        int lowerLeftCellY = lowerLeftCellYOutput.get(C_INT, 0);
+
+        // Flip flat array (bottom-to-top) → row-major 2D (top-to-bottom, row 0 = north)
+        double[][] values = new double[cellsY][cellsX];
+        for (int row = 0; row < cellsY; row++) {
+            int srcRow = cellsY - 1 - row; // bottom-to-top → top-to-bottom
+            for (int col = 0; col < cellsX; col++) {
+                float v = nativeData[srcRow * cellsX + col];
+                values[row][col] = (v == nullValue) ? Double.NaN : v;
+            }
         }
 
-        double[] rangeTable = new double[nativeRangeTable.length];
+        // Compute coordinate arrays
+        double[] x = new double[cellsX];
+        for (int col = 0; col < cellsX; col++) {
+            x[col] = xOrigin + (lowerLeftCellX + col + 0.5) * cellSize;
+        }
+        double[] y = new double[cellsY];
+        for (int row = 0; row < cellsY; row++) {
+            y[row] = yOrigin + (lowerLeftCellY + cellsY - 1 - row + 0.5) * cellSize;
+        }
+
+        // Map GridType → Crs
+        GridType gridType = GridType.fromCode(typeOutput.get(C_INT, 0));
+        Crs crs = gridType.toCrs();
+        String units = dataUnitsOutput.getString(0);
+        GridDataType dataType = GridDataType.fromCode(dataTypeOutput.get(C_INT, 0));
+
+        // Pack native metadata for round-trip
+        double[] rangeLimits = new double[nativeRangeTable.length];
         for (int i = 0; i < nativeRangeTable.length; i++) {
-            rangeTable[i] = nativeRangeTable[i];
+            rangeLimits[i] = nativeRangeTable[i];
         }
 
-        return new DssGrid(data,
-                GridType.fromCode(typeOutput.get(C_INT, 0)),
-                GridDataType.fromCode(dataTypeOutput.get(C_INT, 0)),
-                lowerLeftCellXOutput.get(C_INT, 0), lowerLeftCellYOutput.get(C_INT, 0),
-                cellsX, cellsY,
-                cellSizeOutput.get(C_FLOAT, 0),
-                xCoordOutput.get(C_FLOAT, 0), yCoordOutput.get(C_FLOAT, 0),
+        NativeGridMetadata metadata = new NativeGridMetadata(
+                gridType.code(),
+                lowerLeftCellX, lowerLeftCellY,
+                xOrigin, yOrigin,
+                srsDefinitionTypeOutput.get(C_INT, 0),
+                srsNameOutput.getString(0), srsDefinitionOutput.getString(0),
                 isIntervalOutput.get(C_INT, 0) != 0,
                 isTimeStampedOutput.get(C_INT, 0) != 0,
                 timeZoneIDOutput.getString(0),
-                srsNameOutput.getString(0), srsDefinitionOutput.getString(0),
-                srsDefinitionTypeOutput.get(C_INT, 0),
-                maxDataValueOutput.get(C_FLOAT, 0), minDataValueOutput.get(C_FLOAT, 0),
+                dataSourceOutput.getString(0),
+                maxDataValueOutput.get(C_FLOAT, 0),
+                minDataValueOutput.get(C_FLOAT, 0),
                 meanDataValueOutput.get(C_FLOAT, 0),
-                new DssGrid.RangeHistogram(rangeTable, rangeExceedance)
+                new RangeHistogram(rangeLimits, rangeExceedance)
         );
+
+        return DssGrid.fromNative(values, x, y, units, crs, dataType, metadata);
     }
 }
