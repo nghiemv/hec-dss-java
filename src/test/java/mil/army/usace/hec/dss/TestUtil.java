@@ -7,6 +7,7 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 
 public class TestUtil {
 
@@ -34,6 +35,17 @@ public class TestUtil {
             return Files.createTempFile(prefix, suffix);
         } catch (IOException e) {
             throw new UncheckedIOException("Cannot create temp file: " + fileName, e);
+        }
+    }
+
+    public static Path copyResourceToTemp(String resourceName) {
+        Path source = getResourceFile(resourceName);
+        try {
+            Path temp = Files.createTempFile(resourceName.replace(".dss", ""), ".dss");
+            Files.copy(source, temp, StandardCopyOption.REPLACE_EXISTING);
+            return temp;
+        } catch (IOException e) {
+            throw new UncheckedIOException("Cannot copy resource to temp: " + resourceName, e);
         }
     }
 }

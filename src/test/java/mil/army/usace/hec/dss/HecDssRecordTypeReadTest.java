@@ -6,7 +6,8 @@ import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class HecDssRecordTypeTest {
+class HecDssRecordTypeReadTest {
+
     @Test
     void detectRegularTimeSeries() {
         Path dssFile = TestUtil.getResourceFile("examples-all-data-types.dss");

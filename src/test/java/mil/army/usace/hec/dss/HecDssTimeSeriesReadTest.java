@@ -6,12 +6,12 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
-class HecDssTimeSeriesTest {
+class HecDssTimeSeriesReadTest {
+
     @Test
-    void retrieveRegularTimeSeries() throws Exception {
+    void readRegularTimeSeries() {
         Path dssFile = TestUtil.getResourceFile("examples-all-data-types.dss");
         String pathname = "/regular-time-series/GAPT/FLOW/*/6Hour/forecast1/";
         Instant startTime = ZonedDateTime.parse("2021-09-15T07:00:00Z").toInstant();
@@ -29,7 +29,7 @@ class HecDssTimeSeriesTest {
     }
 
     @Test
-    void retrieveIrregularTimeSeries() throws Exception {
+    void readIrregularTimeSeries() {
         Path dssFile = TestUtil.getResourceFile("examples-all-data-types.dss");
         String pathname = "/irregular-time-series/FAIR OAKS CA/FLOW-ANNUAL PEAK/01Jan1900/IR-Century/USGS/";
         Instant startTime = ZonedDateTime.parse("1905-03-20T00:00:00Z").toInstant();

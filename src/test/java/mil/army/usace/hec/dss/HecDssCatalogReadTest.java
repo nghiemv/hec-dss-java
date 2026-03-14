@@ -5,11 +5,12 @@ import org.junit.jupiter.api.Test;
 import java.nio.file.Path;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
-class HecDssCatalogTest {
+class HecDssCatalogReadTest {
+
     @Test
-    void catalogRetrieveAll() throws Exception {
+    void readAllCatalogEntries() {
         Path dssFile = TestUtil.getResourceFile("examples-all-data-types.dss");
         List<DssPathname> catalog = HecDss.getCatalog(dssFile);
         assertEquals(208, catalog.size());
