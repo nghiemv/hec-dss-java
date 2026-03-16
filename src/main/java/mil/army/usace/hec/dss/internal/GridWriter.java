@@ -18,14 +18,14 @@ public final class GridWriter {
 
         int width = grid.width();
         int height = grid.height();
-        double[][] values = grid.values();
+        double[] data = grid.data();
 
-        // Flatten double[][] (top-to-bottom) → float[] (bottom-to-top) for native DSS
+        // Flatten to float[] and flip: row 0 (north) → last native row (bottom-to-top)
         float[] nativeData = new float[width * height];
         for (int row = 0; row < height; row++) {
-            int dstRow = height - 1 - row; // flip: row 0 (north) → last native row
+            int dstRow = height - 1 - row;
             for (int col = 0; col < width; col++) {
-                double v = values[row][col];
+                double v = data[row * width + col];
                 nativeData[dstRow * width + col] = Double.isNaN(v) ? NULL_SENTINEL : (float) v;
             }
         }
@@ -33,7 +33,7 @@ public final class GridWriter {
         // Resolve native fields — round-trip uses stored metadata, user-constructed derives them
         int gridTypeCode;
         int lowerLeftCellX, lowerLeftCellY;
-        double xOrigin, yOrigin;
+        double nativeXOrigin, nativeYOrigin;
         int srsDefinitionType;
         String srsName, srsDefinition, timeZoneId, dataSource;
         boolean isInterval, isTimeStamped;
@@ -47,8 +47,8 @@ public final class GridWriter {
             gridTypeCode = meta.gridTypeCode();
             lowerLeftCellX = meta.lowerLeftCellX();
             lowerLeftCellY = meta.lowerLeftCellY();
-            xOrigin = meta.xCoordOfGridCellZero();
-            yOrigin = meta.yCoordOfGridCellZero();
+            nativeXOrigin = meta.xCoordOfGridCellZero();
+            nativeYOrigin = meta.yCoordOfGridCellZero();
             srsDefinitionType = meta.srsDefinitionType();
             srsName = meta.srsName();
             srsDefinition = meta.srsDefinition();
@@ -69,15 +69,11 @@ public final class GridWriter {
             rangeExceedance = histogram.exceedanceCounts();
             numRanges = histogram.size();
         } else {
-            // User-constructed: derive native fields from coordinate arrays
-            double cellSize = grid.cellSize();
-            double[] x = grid.x();
-            double[] y = grid.y();
-
+            // User-constructed: derive native fields from grid geometry
             lowerLeftCellX = 0;
             lowerLeftCellY = 0;
-            xOrigin = x[0] - 0.5 * cellSize;
-            yOrigin = y[height - 1] - 0.5 * cellSize; // y[height-1] = southernmost
+            nativeXOrigin = grid.xOrigin();
+            nativeYOrigin = grid.yOrigin();
 
             GridType gridType = GridType.fromCrs(grid.crs(), false);
             gridTypeCode = gridType.code();
@@ -136,7 +132,7 @@ public final class GridWriter {
                 dataUnitsInput, dataSourceInput,
                 srsNameInput, srsDefinitionInput, timeZoneIdInput,
                 (float) grid.cellSize(),
-                (float) xOrigin, (float) yOrigin,
+                (float) nativeXOrigin, (float) nativeYOrigin,
                 NULL_SENTINEL,
                 maxVal, minVal, meanVal,
                 rangeLimitInput, rangeExceedInput,

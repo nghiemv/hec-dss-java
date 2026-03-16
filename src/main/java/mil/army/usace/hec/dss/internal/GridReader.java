@@ -130,30 +130,24 @@ public final class GridReader {
                 : new int[0];
 
         double cellSize = cellSizeOutput.get(C_FLOAT, 0);
-        double xOrigin = xCoordOutput.get(C_FLOAT, 0);
-        double yOrigin = yCoordOutput.get(C_FLOAT, 0);
+        double nativeXOrigin = xCoordOutput.get(C_FLOAT, 0);
+        double nativeYOrigin = yCoordOutput.get(C_FLOAT, 0);
         int lowerLeftCellX = lowerLeftCellXOutput.get(C_INT, 0);
         int lowerLeftCellY = lowerLeftCellYOutput.get(C_INT, 0);
 
-        // Flip flat array (bottom-to-top) → row-major 2D (top-to-bottom, row 0 = north)
-        double[][] values = new double[cellsY][cellsX];
+        // Flip flat array: native is bottom-to-top → we want row 0 = north (top-to-bottom)
+        double[] data = new double[dataLength];
         for (int row = 0; row < cellsY; row++) {
-            int srcRow = cellsY - 1 - row; // bottom-to-top → top-to-bottom
+            int srcRow = cellsY - 1 - row;
             for (int col = 0; col < cellsX; col++) {
                 float v = nativeData[srcRow * cellsX + col];
-                values[row][col] = (v == nullValue) ? Double.NaN : v;
+                data[row * cellsX + col] = (v == nullValue) ? Double.NaN : v;
             }
         }
 
-        // Compute coordinate arrays
-        double[] x = new double[cellsX];
-        for (int col = 0; col < cellsX; col++) {
-            x[col] = xOrigin + (lowerLeftCellX + col + 0.5) * cellSize;
-        }
-        double[] y = new double[cellsY];
-        for (int row = 0; row < cellsY; row++) {
-            y[row] = yOrigin + (lowerLeftCellY + cellsY - 1 - row + 0.5) * cellSize;
-        }
+        // Compute grid origin (west edge, south edge) from native cell-zero origin + lower-left offsets
+        double xOrigin = nativeXOrigin + lowerLeftCellX * cellSize;
+        double yOrigin = nativeYOrigin + lowerLeftCellY * cellSize;
 
         // Map GridType → Crs
         GridType gridType = GridType.fromCode(typeOutput.get(C_INT, 0));
@@ -170,7 +164,7 @@ public final class GridReader {
         NativeGridMetadata metadata = new NativeGridMetadata(
                 gridType.code(),
                 lowerLeftCellX, lowerLeftCellY,
-                xOrigin, yOrigin,
+                nativeXOrigin, nativeYOrigin,
                 srsDefinitionTypeOutput.get(C_INT, 0),
                 srsNameOutput.getString(0), srsDefinitionOutput.getString(0),
                 isIntervalOutput.get(C_INT, 0) != 0,
@@ -183,6 +177,7 @@ public final class GridReader {
                 new RangeHistogram(rangeLimits, rangeExceedance)
         );
 
-        return DssGrid.fromNative(values, x, y, units, crs, dataType, metadata);
+        return DssGrid.fromNative(data, cellsX, cellsY, cellSize, xOrigin, yOrigin,
+                units, crs, dataType, metadata);
     }
 }

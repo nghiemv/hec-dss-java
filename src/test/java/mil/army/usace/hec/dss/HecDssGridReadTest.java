@@ -16,7 +16,6 @@ class HecDssGridReadTest {
         DssGrid grid = HecDss.readGrid(dssFile, pathname);
         assertEquals(21, grid.width());
         assertEquals(28, grid.height());
-        assertEquals(21, grid.values()[0].length);
-        assertEquals(28, grid.values().length);
+        assertEquals(21 * 28, grid.data().length);
     }
 }

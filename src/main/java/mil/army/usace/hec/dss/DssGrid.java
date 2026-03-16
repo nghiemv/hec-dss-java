@@ -2,92 +2,152 @@ package mil.army.usace.hec.dss;
 
 import mil.army.usace.hec.dss.internal.NativeGridMetadata;
 
-import java.util.Arrays;
 import java.util.Objects;
 
 /**
  * Gridded (raster) data read from or written to a DSS file.
  *
- * <p>A grid has five essential concepts:
+ * <p>A grid stores cell values on a regular (uniform-spacing) grid defined by:
  * <ul>
- *   <li>{@link #values()} — cell data as {@code double[][]}, row-major, row 0 = north</li>
- *   <li>{@link #x()} — column center coordinates (west → east)</li>
- *   <li>{@link #y()} — row center coordinates (north → south)</li>
- *   <li>{@link #units()} — data units (e.g. "MM", "IN")</li>
- *   <li>{@link #crs()} — coordinate reference system</li>
+ *   <li>{@link #width()}, {@link #height()} — grid dimensions in cells</li>
+ *   <li>{@link #cellSize()} — cell spacing in CRS units</li>
+ *   <li>{@link #xOrigin()}, {@link #yOrigin()} — west and south edges of the grid</li>
  * </ul>
+ *
+ * <p>Cell coordinates are derived from the geometry — use {@link #x(int)} and {@link #y(int)}
+ * to get the center coordinate of any cell in O(1).
  *
  * <p>Missing cell values are represented as {@link Double#NaN}.
  *
- * <p>Create grids with {@link #of(double[][], double[], double[], String, Crs)}:
+ * <p>Create grids from scratch:
  * <pre>{@code
- * DssGrid grid = DssGrid.of(values, x, y, "MM", Crs.SHG);
+ * DssGrid grid = DssGrid.of(data, 50, 50, 2000.0, 0.0, 0.0,
+ *         "MM", Crs.SHG, GridDataType.PERIOD_CUMULATIVE);
+ * }</pre>
+ *
+ * <p>Or derive from an existing grid (common case — same geometry, new data):
+ * <pre>{@code
+ * DssGrid output = sourceGrid.withData(newData, "MM", GridDataType.PERIOD_CUMULATIVE);
  * }</pre>
  */
 public final class DssGrid {
-    private final double[][] values;
-    private final double[] x;
-    private final double[] y;
+    private final double[] data;
+    private final int width;
+    private final int height;
+    private final double cellSize;
+    private final double xOrigin;
+    private final double yOrigin;
     private final String units;
     private final Crs crs;
     private final GridDataType dataType;
-    private final NativeGridMetadata nativeMetadata; // null for user-constructed grids
+    private final NativeGridMetadata nativeMetadata;
 
-    private DssGrid(double[][] values, double[] x, double[] y,
+    private DssGrid(double[] data, int width, int height,
+                    double cellSize, double xOrigin, double yOrigin,
                     String units, Crs crs, GridDataType dataType,
                     NativeGridMetadata nativeMetadata) {
-        this.values = deepCopy(Objects.requireNonNull(values));
-        this.x = Objects.requireNonNull(x).clone();
-        this.y = Objects.requireNonNull(y).clone();
+        this.data = Objects.requireNonNull(data).clone();
+        this.width = width;
+        this.height = height;
+        this.cellSize = cellSize;
+        this.xOrigin = xOrigin;
+        this.yOrigin = yOrigin;
         this.units = Objects.requireNonNull(units);
         this.crs = Objects.requireNonNull(crs);
         this.dataType = Objects.requireNonNull(dataType);
         this.nativeMetadata = nativeMetadata;
 
-        if (values.length > 0 && values[0].length != x.length) {
+        if (width <= 0 || height <= 0) {
             throw new IllegalArgumentException(
-                    "x length (%d) must match column count (%d)".formatted(x.length, values[0].length));
+                    "dimensions must be positive: width=%d, height=%d".formatted(width, height));
         }
-        if (values.length != y.length) {
+        if (cellSize <= 0) {
             throw new IllegalArgumentException(
-                    "y length (%d) must match row count (%d)".formatted(y.length, values.length));
+                    "cellSize must be positive: %f".formatted(cellSize));
+        }
+        if (data.length != width * height) {
+            throw new IllegalArgumentException(
+                    "data length (%d) must equal width * height (%d)".formatted(data.length, width * height));
         }
     }
 
     /**
-     * Creates a grid from user data.
+     * Creates a grid from scratch.
      *
-     * @param values cell data, row-major, row 0 = north
-     * @param x      column center coordinates (west → east)
-     * @param y      row center coordinates (north → south)
-     * @param units  data units (e.g. "MM")
-     * @param crs    coordinate reference system
+     * @param data     flat row-major cell data (row 0 = north), length must equal width * height
+     * @param width    number of columns
+     * @param height   number of rows
+     * @param cellSize cell spacing in CRS units (must be positive)
+     * @param xOrigin  west edge of the grid
+     * @param yOrigin  south edge of the grid
+     * @param units    data units (e.g. "MM", "IN")
+     * @param crs      coordinate reference system
+     * @param dataType what the cell values represent over time
      */
-    public static DssGrid of(double[][] values, double[] x, double[] y,
-                              String units, Crs crs) {
-        return new DssGrid(values, x, y, units, crs, GridDataType.PERIOD_AVERAGE, null);
+    public static DssGrid of(double[] data, int width, int height,
+                             double cellSize, double xOrigin, double yOrigin,
+                             String units, Crs crs, GridDataType dataType) {
+        return new DssGrid(data, width, height, cellSize, xOrigin, yOrigin,
+                units, crs, dataType, null);
     }
 
     /**
-     * Internal factory for GridReader — preserves native metadata for round-trip.
-     * Not part of the public API.
+     * Returns a new grid with the same geometry and CRS but different data, units, and data type.
+     * This is the common case: applying model results to an existing grid's spatial layout.
      */
-    public static DssGrid fromNative(double[][] values, double[] x, double[] y,
-                                     String units, Crs crs, GridDataType dataType,
-                                     NativeGridMetadata nativeMetadata) {
-        return new DssGrid(values, x, y, units, crs, dataType, nativeMetadata);
+    public DssGrid withData(double[] newData, String units, GridDataType dataType) {
+        return new DssGrid(newData, width, height, cellSize, xOrigin, yOrigin,
+                units, crs, dataType, null);
     }
 
-    // ---- Core data ----
+    /**
+     * Returns a new grid with different units.
+     */
+    public DssGrid withUnits(String units) {
+        return new DssGrid(data, width, height, cellSize, xOrigin, yOrigin,
+                units, crs, dataType, nativeMetadata);
+    }
 
-    /** Cell data as row-major 2D array. Row 0 = north, row {@code height()-1} = south. */
-    public double[][] values() { return deepCopy(values); }
+    /**
+     * Returns a new grid with a different data type.
+     */
+    public DssGrid withDataType(GridDataType dataType) {
+        return new DssGrid(data, width, height, cellSize, xOrigin, yOrigin,
+                units, crs, dataType, nativeMetadata);
+    }
 
-    /** Column center coordinates, west → east. Length = {@link #width()}. */
-    public double[] x() { return x.clone(); }
+    // ---- Data access ----
 
-    /** Row center coordinates, north → south. Length = {@link #height()}. */
-    public double[] y() { return y.clone(); }
+    /** Single cell value. Row 0 = north. */
+    public double value(int row, int col) { return data[row * width + col]; }
+
+    /** Flat copy of cell data, row-major, row 0 = north. */
+    public double[] data() { return data.clone(); }
+
+    // ---- Geometry ----
+
+    /** Number of columns. */
+    public int width() { return width; }
+
+    /** Number of rows. */
+    public int height() { return height; }
+
+    /** Cell spacing in CRS units. */
+    public double cellSize() { return cellSize; }
+
+    /** West edge of the grid. */
+    public double xOrigin() { return xOrigin; }
+
+    /** South edge of the grid. */
+    public double yOrigin() { return yOrigin; }
+
+    /** Center x-coordinate of the given column. */
+    public double x(int col) { return xOrigin + (col + 0.5) * cellSize; }
+
+    /** Center y-coordinate of the given row. Row 0 = north. */
+    public double y(int row) { return yOrigin + (height - 1 - row + 0.5) * cellSize; }
+
+    // ---- Semantics ----
 
     /** Data units (e.g. "MM", "IN"). */
     public String units() { return units; }
@@ -98,32 +158,17 @@ public final class DssGrid {
     /** What the cell values represent over time. */
     public GridDataType dataType() { return dataType; }
 
-    // ---- Convenience ----
+    // ---- Internal (used by GridReader/GridWriter — not part of the public API) ----
 
-    /** Number of columns. */
-    public int width() { return x.length; }
-
-    /** Number of rows. */
-    public int height() { return y.length; }
-
-    /** Single cell value. Row 0 = north. */
-    public double value(int row, int col) { return values[row][col]; }
-
-    /** Cell spacing. Derived from x coordinates. Returns 0 if fewer than 2 columns. */
-    public double cellSize() {
-        return x.length >= 2 ? Math.abs(x[1] - x[0]) : 0;
-    }
-
-    // ---- Internal ----
-
-    /** Not part of the public API. Used by GridWriter for round-trip fidelity. */
+    /** @hidden */
     public NativeGridMetadata nativeMetadata() { return nativeMetadata; }
 
-    private static double[][] deepCopy(double[][] src) {
-        double[][] copy = new double[src.length][];
-        for (int i = 0; i < src.length; i++) {
-            copy[i] = src[i].clone();
-        }
-        return copy;
+    /** @hidden */
+    public static DssGrid fromNative(double[] data, int width, int height,
+                                     double cellSize, double xOrigin, double yOrigin,
+                                     String units, Crs crs, GridDataType dataType,
+                                     NativeGridMetadata nativeMetadata) {
+        return new DssGrid(data, width, height, cellSize, xOrigin, yOrigin,
+                units, crs, dataType, nativeMetadata);
     }
 }
