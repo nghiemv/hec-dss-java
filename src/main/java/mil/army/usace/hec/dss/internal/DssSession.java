@@ -28,6 +28,23 @@ public final class DssSession implements AutoCloseable {
         NativeLibrary.load();
 
         String pathString = filePath.toAbsolutePath().toString();
+
+        // Validate file version before opening (0 = doesn't exist, creates new on open)
+        int version = hecdss_h.hec_dss_getFileVersion(
+                Arena.ofAuto().allocateFrom(pathString));
+        if (version == -1) {
+            throw new DssException(
+                    "'%s' is not a DSS file".formatted(filePath));
+        }
+        if (version == -2) {
+            throw new DssException(
+                    "Invalid file name: '%s'".formatted(filePath));
+        }
+        if (version == 6) {
+            throw new DssException(
+                    "'%s' is a DSS version 6 file — convert to version 7 first".formatted(filePath));
+        }
+
         Arena arena = Arena.ofConfined();
         try {
             MemorySegment pathHolder = arena.allocateFrom(pathString);
@@ -71,7 +88,7 @@ public final class DssSession implements AutoCloseable {
         try {
             int status = hecdss_h.hec_dss_close(dssPointer);
             if (status != 0) {
-                logger.severe("Failed to close DSS file '%s': status=%d"
+                logger.severe("Failed to close DSS file '%s': %s"
                         .formatted(filePath, NativeStatusCode.describe(status)));
             }
         } finally {

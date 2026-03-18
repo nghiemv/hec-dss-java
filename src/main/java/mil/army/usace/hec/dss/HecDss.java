@@ -2,6 +2,7 @@ package mil.army.usace.hec.dss;
 
 import mil.army.usace.hec.dss.internal.*;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
@@ -20,6 +21,7 @@ public final class HecDss {
      * Works for both regular and irregular time series.
      */
     public static DssTimeSeries readTimeSeries(Path file, String pathname) {
+        requireFileExists(file);
         DssPathname parsed = parseAndValidate(pathname);
         DssPathname normalized = parsed.with(DssPathname.Part.D, "*");
         try (DssSession session = DssSession.open(file)) {
@@ -35,6 +37,7 @@ public final class HecDss {
      */
     public static DssTimeSeries readTimeSeries(Path file, String pathname,
                                                Instant start, Instant end) {
+        requireFileExists(file);
         DssPathname parsed = parseAndValidate(pathname);
         DssPathname normalized = parsed.with(DssPathname.Part.D, "*");
         try (DssSession session = DssSession.open(file)) {
@@ -61,6 +64,7 @@ public final class HecDss {
      * Reads paired data (x/y curves) from a DSS file.
      */
     public static DssPairedData readPairedData(Path file, String pathname) {
+        requireFileExists(file);
         DssPathname parsed = parseAndValidate(pathname);
         try (DssSession session = DssSession.open(file)) {
             expectRecordType(session, parsed, "paired data", DssRecordType.PAIRED_DATA);
@@ -84,6 +88,7 @@ public final class HecDss {
      * Reads a grid record from a DSS file.
      */
     public static DssGrid readGrid(Path file, String pathname) {
+        requireFileExists(file);
         DssPathname parsed = parseAndValidate(pathname);
         try (DssSession session = DssSession.open(file)) {
             expectRecordType(session, parsed, "grid", DssRecordType.GRID);
@@ -107,6 +112,7 @@ public final class HecDss {
      * Reads an array record from a DSS file.
      */
     public static double[] readArray(Path file, String pathname) {
+        requireFileExists(file);
         DssPathname parsed = parseAndValidate(pathname);
         try (DssSession session = DssSession.open(file)) {
             return ArrayReader.read(session, parsed);
@@ -129,6 +135,7 @@ public final class HecDss {
      * Reads a text record from a DSS file.
      */
     public static String readText(Path file, String pathname) {
+        requireFileExists(file);
         DssPathname parsed = parseAndValidate(pathname);
         try (DssSession session = DssSession.open(file)) {
             return TextReader.read(session, parsed);
@@ -151,6 +158,7 @@ public final class HecDss {
      * Reads location metadata from a DSS file.
      */
     public static DssLocationInfo readLocationInfo(Path file, String pathname) {
+        requireFileExists(file);
         DssPathname parsed = parseAndValidate(pathname);
         try (DssSession session = DssSession.open(file)) {
             return LocationInfoReader.read(session, parsed);
@@ -173,6 +181,7 @@ public final class HecDss {
      * Returns all catalog entries (pathname + record type) in a DSS file.
      */
     public static List<DssCatalogEntry> getCatalog(Path file) {
+        requireFileExists(file);
         try (DssSession session = DssSession.open(file)) {
             return CatalogReader.readWithTypes(session);
         }
@@ -185,6 +194,7 @@ public final class HecDss {
      * @param pathnamePattern DSS pathname with wildcards, e.g. {@code "/&#42;/&#42;/FLOW/&#42;/&#42;/&#42;/"}
      */
     public static List<DssCatalogEntry> getCatalog(Path file, String pathnamePattern) {
+        requireFileExists(file);
         DssPathname filter = DssPathname.parse(pathnamePattern)
                 .orElseThrow(() -> new DssException(
                         "Invalid pathname pattern '%s': expected /A/B/C/D/E/F/".formatted(pathnamePattern)));
@@ -197,6 +207,7 @@ public final class HecDss {
      * Returns the number of records in a DSS file.
      */
     public static int getRecordCount(Path file) {
+        requireFileExists(file);
         try (DssSession session = DssSession.open(file)) {
             return CatalogReader.recordCount(session);
         }
@@ -208,6 +219,7 @@ public final class HecDss {
      * Returns the type of data stored at the given pathname.
      */
     public static DssRecordType getRecordType(Path file, String pathname) {
+        requireFileExists(file);
         DssPathname parsed = parseAndValidate(pathname);
         try (DssSession session = DssSession.open(file)) {
             return RecordTypeReader.read(session, parsed);
@@ -222,6 +234,7 @@ public final class HecDss {
      * @throws DssException if the pathname is invalid or the delete fails
      */
     public static void delete(Path file, String pathname) {
+        requireFileExists(file);
         DssPathname parsed = parseAndValidate(pathname);
         try (DssSession session = DssSession.open(file)) {
             DeleteOperation.delete(session, parsed);
@@ -234,6 +247,7 @@ public final class HecDss {
      * process should have the file open during a squeeze.
      */
     public static void squeeze(Path file) {
+        requireFileExists(file);
         SqueezeOperation.squeeze(file);
     }
 
@@ -250,6 +264,12 @@ public final class HecDss {
         } catch (DssException e) {
             if (e.getMessage().startsWith("Record '")) throw e;
             // Record type check failed (e.g., record not found) — let the reader handle it
+        }
+    }
+
+    private static void requireFileExists(Path file) {
+        if (!Files.exists(file)) {
+            throw new DssException("DSS file does not exist: '%s'".formatted(file));
         }
     }
 
