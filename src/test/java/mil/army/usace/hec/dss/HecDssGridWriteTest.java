@@ -20,10 +20,7 @@ class HecDssGridWriteTest {
         DssGrid reread = HecDss.readGrid(dssFile, writePath);
         assertEquals(original.width(), reread.width());
         assertEquals(original.height(), reread.height());
-
-        double[] origData = original.data();
-        double[] rereadData = reread.data();
-        assertArrayEquals(origData, rereadData, 0.001);
+        assertArrayEquals(original.data(), reread.data());
     }
 
     @Test
@@ -32,15 +29,15 @@ class HecDssGridWriteTest {
         String pathname = "/grid/new/gradient/01MAY2024:1400/01MAY2024:1400/new-grad/";
 
         int width = 50, height = 50;
-        double cellSize = 2000.0;
-        double[] data = new double[width * height];
+        float cellSize = 2000.0f;
+        float[] data = new float[width * height];
         for (int row = 0; row < height; row++) {
             for (int col = 0; col < width; col++) {
                 data[row * width + col] = col + (50 * row);
             }
         }
 
-        DssGrid input = DssGrid.of(data, width, height, cellSize, 0.0, 0.0,
+        DssGrid input = DssGrid.of(data, width, height, cellSize, 0.0f, 0.0f,
                 "MM", Crs.SHG, GridDataType.PERIOD_AVERAGE);
 
         HecDss.writeGrid(dssFile, pathname, input);
@@ -48,16 +45,16 @@ class HecDssGridWriteTest {
         DssGrid output = HecDss.readGrid(dssFile, pathname);
         assertEquals(width, output.width());
         assertEquals(height, output.height());
-        assertArrayEquals(data, output.data(), 0.01);
+        assertArrayEquals(data, output.data());
     }
 
     @Test
     void gridOrientationRowZeroIsNorth() {
         int width = 3, height = 4;
-        double cellSize = 1000.0;
+        float cellSize = 1000.0f;
 
         // Row 0 (north) = 1.0, row 1 = 2.0, ..., row 3 (south) = 4.0
-        double[] data = new double[width * height];
+        float[] data = new float[width * height];
         for (int row = 0; row < height; row++) {
             for (int col = 0; col < width; col++) {
                 data[row * width + col] = row + 1;
@@ -67,19 +64,19 @@ class HecDssGridWriteTest {
         Path dssFile = TestUtil.createTempFile("grid-orientation-test.dss");
         String pathname = "/grid/TEST/ORIENTATION/01JAN2020:0000/01JAN2020:0000/DEBUG/";
 
-        DssGrid input = DssGrid.of(data, width, height, cellSize, 0.0, 0.0,
+        DssGrid input = DssGrid.of(data, width, height, cellSize, 0.0f, 0.0f,
                 "MM", Crs.SHG, GridDataType.PERIOD_AVERAGE);
         HecDss.writeGrid(dssFile, pathname, input);
         DssGrid output = HecDss.readGrid(dssFile, pathname);
 
         // Verify row 0 = north (value 1.0), row 3 = south (value 4.0)
-        assertEquals(1.0, output.value(0, 0), 0.01, "row 0 (north) should be 1.0");
-        assertEquals(4.0, output.value(height - 1, 0), 0.01, "last row (south) should be 4.0");
+        assertEquals(1.0f, output.value(0, 0), "row 0 (north) should be 1.0");
+        assertEquals(4.0f, output.value(height - 1, 0), "last row (south) should be 4.0");
 
         // Verify all rows
         for (int row = 0; row < height; row++) {
             for (int col = 0; col < width; col++) {
-                assertEquals(row + 1, output.value(row, col), 0.01,
+                assertEquals(row + 1, output.value(row, col),
                         "value(%d,%d) mismatch".formatted(row, col));
             }
         }

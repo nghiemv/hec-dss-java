@@ -17,11 +17,10 @@ import java.util.Objects;
  * <p>Cell coordinates are derived from the geometry — use {@link #x(int)} and {@link #y(int)}
  * to get the center coordinate of any cell in O(1).
  *
- * <p>Missing cell values are represented as {@link Double#NaN}.
+ * <p>Missing cell values are represented as {@link Float#NaN}.
  *
- * <p><b>Precision note:</b> DSS stores grid data as 32-bit floats. This API uses
- * doubles for convenience, but values will lose precision beyond ~7 significant
- * digits when written and read back.
+ * <p>Cell data uses {@code float} to match DSS native storage (32-bit floats),
+ * ensuring lossless round-trips.
  *
  * <p>Create grids from scratch:
  * <pre>{@code
@@ -35,19 +34,19 @@ import java.util.Objects;
  * }</pre>
  */
 public final class DssGrid {
-    private final double[] data;
+    private final float[] data;
     private final int width;
     private final int height;
-    private final double cellSize;
-    private final double xOrigin;
-    private final double yOrigin;
+    private final float cellSize;
+    private final float xOrigin;
+    private final float yOrigin;
     private final String units;
     private final Crs crs;
     private final GridDataType dataType;
     private final NativeGridMetadata nativeMetadata;
 
-    private DssGrid(double[] data, int width, int height,
-                    double cellSize, double xOrigin, double yOrigin,
+    private DssGrid(float[] data, int width, int height,
+                    float cellSize, float xOrigin, float yOrigin,
                     String units, Crs crs, GridDataType dataType,
                     NativeGridMetadata nativeMetadata) {
         this.data = Objects.requireNonNull(data).clone();
@@ -88,8 +87,8 @@ public final class DssGrid {
      * @param crs      coordinate reference system
      * @param dataType what the cell values represent over time
      */
-    public static DssGrid of(double[] data, int width, int height,
-                             double cellSize, double xOrigin, double yOrigin,
+    public static DssGrid of(float[] data, int width, int height,
+                             float cellSize, float xOrigin, float yOrigin,
                              String units, Crs crs, GridDataType dataType) {
         return new DssGrid(data, width, height, cellSize, xOrigin, yOrigin,
                 units, crs, dataType, null);
@@ -99,7 +98,7 @@ public final class DssGrid {
      * Returns a new grid with the same geometry and CRS but different data, units, and data type.
      * This is the common case: applying model results to an existing grid's spatial layout.
      */
-    public DssGrid withData(double[] newData, String units, GridDataType dataType) {
+    public DssGrid withData(float[] newData, String units, GridDataType dataType) {
         return new DssGrid(newData, width, height, cellSize, xOrigin, yOrigin,
                 units, crs, dataType, null);
     }
@@ -123,10 +122,10 @@ public final class DssGrid {
     // ---- Data access ----
 
     /** Single cell value. Row 0 = north. */
-    public double value(int row, int col) { return data[row * width + col]; }
+    public float value(int row, int col) { return data[row * width + col]; }
 
     /** Flat copy of cell data, row-major, row 0 = north. */
-    public double[] data() { return data.clone(); }
+    public float[] data() { return data.clone(); }
 
     // ---- Geometry ----
 
@@ -137,19 +136,19 @@ public final class DssGrid {
     public int height() { return height; }
 
     /** Cell spacing in CRS units. */
-    public double cellSize() { return cellSize; }
+    public float cellSize() { return cellSize; }
 
     /** West edge of the grid. */
-    public double xOrigin() { return xOrigin; }
+    public float xOrigin() { return xOrigin; }
 
     /** South edge of the grid. */
-    public double yOrigin() { return yOrigin; }
+    public float yOrigin() { return yOrigin; }
 
     /** Center x-coordinate of the given column. */
-    public double x(int col) { return xOrigin + (col + 0.5) * cellSize; }
+    public float x(int col) { return xOrigin + (col + 0.5f) * cellSize; }
 
     /** Center y-coordinate of the given row. Row 0 = north. */
-    public double y(int row) { return yOrigin + (height - 1 - row + 0.5) * cellSize; }
+    public float y(int row) { return yOrigin + (height - 1 - row + 0.5f) * cellSize; }
 
     // ---- Semantics ----
 
@@ -168,8 +167,8 @@ public final class DssGrid {
     public NativeGridMetadata nativeMetadata() { return nativeMetadata; }
 
     /** @hidden */
-    public static DssGrid fromNative(double[] data, int width, int height,
-                                     double cellSize, double xOrigin, double yOrigin,
+    public static DssGrid fromNative(float[] data, int width, int height,
+                                     float cellSize, float xOrigin, float yOrigin,
                                      String units, Crs crs, GridDataType dataType,
                                      NativeGridMetadata nativeMetadata) {
         return new DssGrid(data, width, height, cellSize, xOrigin, yOrigin,
