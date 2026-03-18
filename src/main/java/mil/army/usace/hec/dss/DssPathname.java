@@ -5,6 +5,11 @@ import java.util.Optional;
 /**
  * Represents a DSS pathname with parts A through F.
  * All instances are guaranteed to be valid.
+ *
+ * <p><b>Case sensitivity:</b> DSS pathnames are case-insensitive but case-preserving.
+ * Parts are stored in their original case, but {@link #equals}, {@link #hashCode},
+ * and {@link #matches} all compare case-insensitively — matching the native DSS
+ * behavior (zhash uppercases before hashing, zpathnameCompare uses toupper).
  */
 public record DssPathname(String aPart, String bPart, String cPart, String dPart, String ePart, String fPart) {
     private static final String WILDCARD = "*";
@@ -71,7 +76,30 @@ public record DssPathname(String aPart, String bPart, String cPart, String dPart
     }
 
     private static boolean matchesPart(String value, String pattern) {
-        return WILDCARD.equals(pattern) || pattern.equals(value);
+        return WILDCARD.equals(pattern) || pattern.equalsIgnoreCase(value);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        return this == o || (o instanceof DssPathname p
+                && aPart.equalsIgnoreCase(p.aPart)
+                && bPart.equalsIgnoreCase(p.bPart)
+                && cPart.equalsIgnoreCase(p.cPart)
+                && dPart.equalsIgnoreCase(p.dPart)
+                && ePart.equalsIgnoreCase(p.ePart)
+                && fPart.equalsIgnoreCase(p.fPart));
+    }
+
+    @Override
+    public int hashCode() {
+        int h = 1;
+        h = 31 * h + aPart.toUpperCase().hashCode();
+        h = 31 * h + bPart.toUpperCase().hashCode();
+        h = 31 * h + cPart.toUpperCase().hashCode();
+        h = 31 * h + dPart.toUpperCase().hashCode();
+        h = 31 * h + ePart.toUpperCase().hashCode();
+        h = 31 * h + fPart.toUpperCase().hashCode();
+        return h;
     }
 
     /**
