@@ -69,8 +69,8 @@ public final class LocationInfoReader {
         }
 
         return new DssLocationInfo(
-                xOutput.get(C_DOUBLE, 0),
-                yOutput.get(C_DOUBLE, 0),
+                yOutput.get(C_DOUBLE, 0),  // latitude (native y)
+                xOutput.get(C_DOUBLE, 0),  // longitude (native x)
                 zOutput.get(C_DOUBLE, 0),
                 crs,
                 timeZone,

@@ -51,7 +51,7 @@ class HecDssLocationInfoWriteTest {
         DssLocationInfo original = HecDss.readLocationInfo(dssFile, readPath);
 
         DssLocationInfo modified = new DssLocationInfo(
-                original.longitude() + 1.0, original.latitude(), original.elevation(),
+                original.latitude(), original.longitude() + 1.0, original.elevation(),
                 original.crs(),
                 original.timeZone(), original.description()
         );
