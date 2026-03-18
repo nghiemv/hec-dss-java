@@ -149,9 +149,9 @@ public final class GridReader {
         double xOrigin = nativeXOrigin + lowerLeftCellX * cellSize;
         double yOrigin = nativeYOrigin + lowerLeftCellY * cellSize;
 
-        // Map GridType → Crs
+        // Map GridType → DssCrs
         GridType gridType = GridType.fromCode(typeOutput.get(C_INT, 0));
-        Crs crs = gridType.toCrs();
+        DssCrs crs = gridType.toCrs();
         String units = dataUnitsOutput.getString(0);
         GridDataType dataType = GridDataType.fromCode(dataTypeOutput.get(C_INT, 0));
 

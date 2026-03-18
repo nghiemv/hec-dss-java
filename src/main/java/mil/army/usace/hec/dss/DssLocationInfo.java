@@ -15,7 +15,7 @@ import java.util.Objects;
  */
 public record DssLocationInfo(
         double latitude, double longitude, double elevation,
-        Crs crs,
+        DssCrs crs,
         ZoneId timeZone, String description
 ) {
     public DssLocationInfo {
@@ -27,6 +27,6 @@ public record DssLocationInfo(
      * Creates location info with WGS84 geographic coordinates.
      */
     public static DssLocationInfo of(double latitude, double longitude, double elevation, ZoneId timeZone) {
-        return new DssLocationInfo(latitude, longitude, elevation, Crs.WGS84, timeZone, "");
+        return new DssLocationInfo(latitude, longitude, elevation, DssCrs.WGS84, timeZone, "");
     }
 }

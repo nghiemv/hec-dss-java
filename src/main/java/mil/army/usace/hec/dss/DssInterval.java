@@ -14,8 +14,8 @@ package mil.army.usace.hec.dss;
  * @see <a href="https://github.com/HydrologicEngineeringCenter/hec-dss/blob/master/heclib/heclib_c/src/headers/standardIntervals.h">
  *      standardIntervals.h — eParts7 array</a>
  */
-public final class Interval {
-    private Interval() {}
+public final class DssInterval {
+    private DssInterval() {}
 
     // ---- Regular: seconds ----
     public static final String SECOND_1 = "1Second";

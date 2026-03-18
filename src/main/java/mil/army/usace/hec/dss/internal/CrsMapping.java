@@ -1,9 +1,9 @@
 package mil.army.usace.hec.dss.internal;
 
-import mil.army.usace.hec.dss.Crs;
+import mil.army.usace.hec.dss.DssCrs;
 
 /**
- * Bidirectional mapping between {@link Crs} and the native DSS location codes
+ * Bidirectional mapping between {@link DssCrs} and the native DSS location codes
  * (coordinate system, datum, units).
  */
 public final class CrsMapping {
@@ -33,22 +33,22 @@ public final class CrsMapping {
     ) {}
 
     /**
-     * Converts native DSS codes to a {@link Crs}.
+     * Converts native DSS codes to a {@link DssCrs}.
      */
-    public static Crs toCrs(int coordinateSystem, int coordinateId,
+    public static DssCrs toCrs(int coordinateSystem, int coordinateId,
                              int horizontalUnits, int horizontalDatum,
                              int verticalUnits, int verticalDatum) {
         if (coordinateSystem == CS_GEOGRAPHIC && horizontalUnits == LU_DEGREES) {
-            if (horizontalDatum == HD_WGS84) return Crs.WGS84;
-            if (horizontalDatum == HD_NAD83) return Crs.NAD83;
+            if (horizontalDatum == HD_WGS84) return DssCrs.WGS84;
+            if (horizontalDatum == HD_NAD83) return DssCrs.NAD83;
         }
-        return Crs.NONE;
+        return DssCrs.NONE;
     }
 
     /**
-     * Converts a {@link Crs} to native DSS codes.
+     * Converts a {@link DssCrs} to native DSS codes.
      */
-    public static NativeCodes fromCrs(Crs crs) {
+    public static NativeCodes fromCrs(DssCrs crs) {
         return switch (crs) {
             case WGS84 -> new NativeCodes(CS_GEOGRAPHIC, 0, LU_DEGREES, HD_WGS84, LU_NONE, HD_NONE);
             case NAD83 -> new NativeCodes(CS_GEOGRAPHIC, 0, LU_DEGREES, HD_NAD83, LU_NONE, HD_NONE);

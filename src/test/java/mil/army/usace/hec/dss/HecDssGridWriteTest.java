@@ -41,7 +41,7 @@ class HecDssGridWriteTest {
         }
 
         DssGrid input = DssGrid.of(data, width, height, cellSize, 0.0, 0.0,
-                "MM", Crs.SHG, GridDataType.PER_AVER);
+                "MM", DssCrs.SHG, GridDataType.PER_AVER);
 
         HecDss.writeGrid(dssFile, pathname, input);
 
@@ -68,7 +68,7 @@ class HecDssGridWriteTest {
         String pathname = "/grid/TEST/ORIENTATION/01JAN2020:0000/01JAN2020:0000/DEBUG/";
 
         DssGrid input = DssGrid.of(data, width, height, cellSize, 0.0, 0.0,
-                "MM", Crs.SHG, GridDataType.PER_AVER);
+                "MM", DssCrs.SHG, GridDataType.PER_AVER);
         HecDss.writeGrid(dssFile, pathname, input);
         DssGrid output = HecDss.readGrid(dssFile, pathname);
 

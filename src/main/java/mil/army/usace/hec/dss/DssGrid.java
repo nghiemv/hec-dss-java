@@ -33,7 +33,7 @@ import java.util.Objects;
  * <p>Create grids from scratch:
  * <pre>{@code
  * DssGrid grid = DssGrid.of(data, 50, 50, 2000.0, 0.0, 0.0,
- *         "MM", Crs.SHG, GridDataType.PER_CUM);
+ *         "MM", DssCrs.SHG, GridDataType.PER_CUM);
  * }</pre>
  *
  * <p>Or derive from an existing grid (common case — same geometry, new data):
@@ -49,13 +49,13 @@ public final class DssGrid {
     private final double xOrigin;
     private final double yOrigin;
     private final String units;
-    private final Crs crs;
+    private final DssCrs crs;
     private final GridDataType dataType;
     private final NativeGridMetadata nativeMetadata;
 
     private DssGrid(double[] data, int width, int height,
                     double cellSize, double xOrigin, double yOrigin,
-                    String units, Crs crs, GridDataType dataType,
+                    String units, DssCrs crs, GridDataType dataType,
                     NativeGridMetadata nativeMetadata) {
         this.data = Objects.requireNonNull(data).clone();
         this.width = width;
@@ -97,7 +97,7 @@ public final class DssGrid {
      */
     public static DssGrid of(double[] data, int width, int height,
                              double cellSize, double xOrigin, double yOrigin,
-                             String units, Crs crs, GridDataType dataType) {
+                             String units, DssCrs crs, GridDataType dataType) {
         return new DssGrid(data, width, height, cellSize, xOrigin, yOrigin,
                 units, crs, dataType, null);
     }
@@ -164,7 +164,7 @@ public final class DssGrid {
     public String units() { return units; }
 
     /** Coordinate reference system. */
-    public Crs crs() { return crs; }
+    public DssCrs crs() { return crs; }
 
     /** What the cell values represent over time. */
     public GridDataType dataType() { return dataType; }
@@ -177,7 +177,7 @@ public final class DssGrid {
     /** @hidden */
     public static DssGrid fromNative(double[] data, int width, int height,
                                      double cellSize, double xOrigin, double yOrigin,
-                                     String units, Crs crs, GridDataType dataType,
+                                     String units, DssCrs crs, GridDataType dataType,
                                      NativeGridMetadata nativeMetadata) {
         return new DssGrid(data, width, height, cellSize, xOrigin, yOrigin,
                 units, crs, dataType, nativeMetadata);

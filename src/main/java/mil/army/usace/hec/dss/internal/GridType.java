@@ -1,9 +1,9 @@
 package mil.army.usace.hec.dss.internal;
 
-import mil.army.usace.hec.dss.Crs;
+import mil.army.usace.hec.dss.DssCrs;
 
 /**
- * Native DSS grid type codes. Maps between {@link Crs} and native integer codes.
+ * Native DSS grid type codes. Maps between {@link DssCrs} and native integer codes.
  */
 public enum GridType {
     UNDEFINED(400),
@@ -23,12 +23,12 @@ public enum GridType {
 
     public int code() { return code; }
 
-    public Crs toCrs() {
+    public DssCrs toCrs() {
         return switch (this) {
-            case SHG, SHG_NO_TIME -> Crs.SHG;
-            case HRAP, HRAP_NO_TIME -> Crs.HRAP;
-            case ALBERS, ALBERS_NO_TIME -> Crs.ALBERS;
-            case UNDEFINED, UNDEFINED_NO_TIME -> Crs.NONE;
+            case SHG, SHG_NO_TIME -> DssCrs.SHG;
+            case HRAP, HRAP_NO_TIME -> DssCrs.HRAP;
+            case ALBERS, ALBERS_NO_TIME -> DssCrs.ALBERS;
+            case UNDEFINED, UNDEFINED_NO_TIME -> DssCrs.NONE;
         };
     }
 
@@ -36,7 +36,7 @@ public enum GridType {
         return code % 2 == 0;
     }
 
-    public static GridType fromCrs(Crs crs, boolean timeStamped) {
+    public static GridType fromCrs(DssCrs crs, boolean timeStamped) {
         return switch (crs) {
             case SHG -> timeStamped ? SHG : SHG_NO_TIME;
             case HRAP -> timeStamped ? HRAP : HRAP_NO_TIME;
