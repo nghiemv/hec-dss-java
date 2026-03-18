@@ -12,9 +12,10 @@ import java.util.stream.IntStream;
  * <p>Missing values are represented as {@link Double#NaN}.
  * Use {@link #isUndefined(int)} to check, or {@link #dropNa()} to exclude them.
  *
- * <p>Times are stored as UTC {@link Instant}s. The optional {@link #timeZone()}
- * records the time zone the data was originally observed in — DSS stores this
- * per-record but it does not affect the timestamps themselves.
+ * <p>Times are true UTC {@link Instant}s. When reading from DSS, the stored
+ * timezone is used to convert the native calendar times to UTC. When writing,
+ * Instants are converted to the specified timezone's local time for native
+ * storage. If no timezone is stored or specified, UTC is assumed.
  *
  * <p>Quality flags are optional per-value integers stored by DSS. The meaning
  * of individual bits is application-defined (e.g. screened, valid, missing,
@@ -121,7 +122,8 @@ public final class DssTimeSeries {
 
     /**
      * Returns the time zone the data was observed in, or null if not specified.
-     * This is metadata only — it does not affect the UTC timestamps.
+     * When present, this timezone was used to convert between DSS native calendar
+     * times and the UTC Instants in this object.
      */
     public ZoneId timeZone() {
         return timeZone;

@@ -30,8 +30,10 @@ public final class TimeSeriesWriter {
 
         Arena arena = session.arena();
 
+        java.time.ZoneId zone = data.timeZone() != null
+                ? data.timeZone() : java.time.ZoneOffset.UTC;
         Instant startInstant = data.time(0);
-        NativeDateFormat time = NativeDateFormat.from(startInstant, startInstant);
+        NativeDateFormat time = NativeDateFormat.from(startInstant, startInstant, zone);
 
         double[] values = data.values();
         MemorySegment pathnameInput = arena.allocateFrom(pathname.toString());
@@ -69,21 +71,26 @@ public final class TimeSeriesWriter {
         }
 
         Arena arena = session.arena();
+        java.time.ZoneId zone = data.timeZone() != null
+                ? data.timeZone() : java.time.ZoneOffset.UTC;
         int granularity = 60; // seconds per unit — minutes is the standard for irregular
 
-        // Compute base date (julian days since DSS epoch) from first value
-        long firstEpoch = data.time(0).getEpochSecond();
-        long baseDaysSinceEpoch = (firstEpoch - InternalConstants.BASE_EPOCH_SECONDS) / 86400;
-        long baseEpochSeconds = InternalConstants.BASE_EPOCH_SECONDS + baseDaysSinceEpoch * 86400;
+        // Convert first Instant to local time in the target timezone, then compute
+        // base date and time offsets in that timezone's local calendar
+        java.time.ZonedDateTime firstLocal = data.time(0).atZone(zone);
+        java.time.ZonedDateTime baseLocal = firstLocal.toLocalDate()
+                .atStartOfDay(zone);
+        long baseEpochSeconds = baseLocal.toEpochSecond();
 
         // Format the base date for native call
-        Instant baseInstant = Instant.ofEpochSecond(baseEpochSeconds);
-        NativeDateFormat baseDateFmt = NativeDateFormat.from(baseInstant, baseInstant);
+        NativeDateFormat baseDateFmt = NativeDateFormat.from(
+                baseLocal.toInstant(), baseLocal.toInstant(), zone);
 
-        // Compute time offsets in granularity units from base
+        // Compute time offsets in granularity units from base, in local time
         int[] timeOffsets = new int[data.size()];
         for (int i = 0; i < data.size(); i++) {
-            timeOffsets[i] = (int) ((data.time(i).getEpochSecond() - baseEpochSeconds) / granularity);
+            long localSeconds = data.time(i).atZone(zone).toEpochSecond();
+            timeOffsets[i] = (int) ((localSeconds - baseEpochSeconds) / granularity);
         }
 
         MemorySegment pathnameInput = arena.allocateFrom(pathname.toString());

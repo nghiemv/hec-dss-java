@@ -99,10 +99,19 @@ public final class TimeSeriesReader {
                 (long) count * ValueLayout.JAVA_INT.byteSize())
                 .toArray(ValueLayout.JAVA_INT);
 
+        // Convert native calendar times to proper UTC Instants
+        // DSS stores calendar date+time with no timezone semantics — the timezone
+        // string tells us how to interpret them. Default to UTC if no timezone.
+        java.time.ZoneId zone = timeZone != null ? timeZone : java.time.ZoneOffset.UTC;
+
         Instant[] times = new Instant[count];
         for (int i = 0; i < count; i++) {
-            times[i] = Instant.ofEpochSecond(
-                    InternalConstants.BASE_EPOCH_SECONDS + (long) timeDeltas[i] * granularity);
+            long rawEpoch = InternalConstants.BASE_EPOCH_SECONDS + (long) timeDeltas[i] * granularity;
+            // rawEpoch is seconds since 1970 IF the stored time were UTC.
+            // Convert to LocalDateTime, then reinterpret in the actual timezone.
+            java.time.LocalDateTime ldt = java.time.LocalDateTime.ofEpochSecond(
+                    rawEpoch, 0, java.time.ZoneOffset.UTC);
+            times[i] = ldt.atZone(zone).toInstant();
             if (values[i] == InternalConstants.UNDEFINED_DOUBLE) {
                 values[i] = Double.NaN;
             }
