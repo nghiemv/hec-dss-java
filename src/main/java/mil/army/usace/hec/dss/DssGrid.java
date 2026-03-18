@@ -17,6 +17,11 @@ import java.util.Objects;
  * <p>Cell coordinates are derived from the geometry — use {@link #x(int)} and {@link #y(int)}
  * to get the center coordinate of any cell in O(1).
  *
+ * <p><b>Row ordering:</b> Row 0 is the <em>northernmost</em> row. Data is stored in
+ * row-major order with row index increasing southward. This matches image/screen
+ * convention but differs from the native DSS storage (which is bottom-to-top).
+ * The conversion is handled transparently on read and write.
+ *
  * <p>Missing cell values are represented as {@link Double#NaN}.
  *
  * <p><b>Precision note:</b> DSS currently stores grid data as 32-bit floats
