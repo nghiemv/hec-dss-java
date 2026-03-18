@@ -22,6 +22,6 @@ public enum GridDataType {
         for (GridDataType t : values()) {
             if (t.code == code) return t;
         }
-        return PERIOD_AVERAGE;
+        throw new IllegalArgumentException("Unknown grid data type code: %d".formatted(code));
     }
 }
