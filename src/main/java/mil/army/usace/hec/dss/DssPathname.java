@@ -1,5 +1,6 @@
 package mil.army.usace.hec.dss;
 
+import java.util.Locale;
 import java.util.Optional;
 
 /**
@@ -93,12 +94,12 @@ public record DssPathname(String aPart, String bPart, String cPart, String dPart
     @Override
     public int hashCode() {
         int h = 1;
-        h = 31 * h + aPart.toUpperCase().hashCode();
-        h = 31 * h + bPart.toUpperCase().hashCode();
-        h = 31 * h + cPart.toUpperCase().hashCode();
-        h = 31 * h + dPart.toUpperCase().hashCode();
-        h = 31 * h + ePart.toUpperCase().hashCode();
-        h = 31 * h + fPart.toUpperCase().hashCode();
+        h = 31 * h + aPart.toUpperCase(Locale.ROOT).hashCode();
+        h = 31 * h + bPart.toUpperCase(Locale.ROOT).hashCode();
+        h = 31 * h + cPart.toUpperCase(Locale.ROOT).hashCode();
+        h = 31 * h + dPart.toUpperCase(Locale.ROOT).hashCode();
+        h = 31 * h + ePart.toUpperCase(Locale.ROOT).hashCode();
+        h = 31 * h + fPart.toUpperCase(Locale.ROOT).hashCode();
         return h;
     }
 
