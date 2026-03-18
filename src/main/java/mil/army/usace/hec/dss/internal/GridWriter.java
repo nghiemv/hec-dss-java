@@ -18,22 +18,22 @@ public final class GridWriter {
 
         int width = grid.width();
         int height = grid.height();
-        float[] data = grid.data();
+        double[] data = grid.data();
 
-        // Flip: row 0 (north) → last native row (bottom-to-top), replace NaN with sentinel
+        // Flatten to float[] and flip: row 0 (north) → last native row (bottom-to-top)
         float[] nativeData = new float[width * height];
         for (int row = 0; row < height; row++) {
             int dstRow = height - 1 - row;
             for (int col = 0; col < width; col++) {
-                float v = data[row * width + col];
-                nativeData[dstRow * width + col] = Float.isNaN(v) ? NULL_SENTINEL : v;
+                double v = data[row * width + col];
+                nativeData[dstRow * width + col] = Double.isNaN(v) ? NULL_SENTINEL : (float) v;
             }
         }
 
         // Resolve native fields — round-trip uses stored metadata, user-constructed derives them
         int gridTypeCode;
         int lowerLeftCellX, lowerLeftCellY;
-        float nativeXOrigin, nativeYOrigin;
+        double nativeXOrigin, nativeYOrigin;
         int srsDefinitionType;
         String srsName, srsDefinition, timeZoneId, dataSource;
         boolean isInterval, isTimeStamped;
@@ -56,12 +56,16 @@ public final class GridWriter {
             isTimeStamped = meta.isTimeStamped();
             timeZoneId = meta.timeZoneId();
             dataSource = meta.dataSource();
-            maxVal = meta.maxDataValue();
-            minVal = meta.minDataValue();
-            meanVal = meta.meanDataValue();
+            maxVal = (float) meta.maxDataValue();
+            minVal = (float) meta.minDataValue();
+            meanVal = (float) meta.meanDataValue();
 
             RangeHistogram histogram = meta.rangeHistogram();
-            nativeRangeTable = histogram.limits();
+            double[] doubleLimits = histogram.limits();
+            nativeRangeTable = new float[doubleLimits.length];
+            for (int i = 0; i < doubleLimits.length; i++) {
+                nativeRangeTable[i] = (float) doubleLimits[i];
+            }
             rangeExceedance = histogram.exceedanceCounts();
             numRanges = histogram.size();
         } else {
@@ -127,8 +131,8 @@ public final class GridWriter {
                 0, // compressionSize
                 dataUnitsInput, dataSourceInput,
                 srsNameInput, srsDefinitionInput, timeZoneIdInput,
-                grid.cellSize(),
-                nativeXOrigin, nativeYOrigin,
+                (float) grid.cellSize(),
+                (float) nativeXOrigin, (float) nativeYOrigin,
                 NULL_SENTINEL,
                 maxVal, minVal, meanVal,
                 rangeLimitInput, rangeExceedInput,

@@ -129,31 +129,37 @@ public final class GridReader {
                     .toArray(ValueLayout.JAVA_INT)
                 : new int[0];
 
-        float cellSize = cellSizeOutput.get(C_FLOAT, 0);
-        float nativeXOrigin = xCoordOutput.get(C_FLOAT, 0);
-        float nativeYOrigin = yCoordOutput.get(C_FLOAT, 0);
+        double cellSize = cellSizeOutput.get(C_FLOAT, 0);
+        double nativeXOrigin = xCoordOutput.get(C_FLOAT, 0);
+        double nativeYOrigin = yCoordOutput.get(C_FLOAT, 0);
         int lowerLeftCellX = lowerLeftCellXOutput.get(C_INT, 0);
         int lowerLeftCellY = lowerLeftCellYOutput.get(C_INT, 0);
 
         // Flip flat array: native is bottom-to-top → we want row 0 = north (top-to-bottom)
-        float[] data = new float[dataLength];
+        double[] data = new double[dataLength];
         for (int row = 0; row < cellsY; row++) {
             int srcRow = cellsY - 1 - row;
             for (int col = 0; col < cellsX; col++) {
                 float v = nativeData[srcRow * cellsX + col];
-                data[row * cellsX + col] = (v == nullValue) ? Float.NaN : v;
+                data[row * cellsX + col] = (v == nullValue) ? Double.NaN : v;
             }
         }
 
         // Compute grid origin (west edge, south edge) from native cell-zero origin + lower-left offsets
-        float xOrigin = nativeXOrigin + lowerLeftCellX * cellSize;
-        float yOrigin = nativeYOrigin + lowerLeftCellY * cellSize;
+        double xOrigin = nativeXOrigin + lowerLeftCellX * cellSize;
+        double yOrigin = nativeYOrigin + lowerLeftCellY * cellSize;
 
         // Map GridType → Crs
         GridType gridType = GridType.fromCode(typeOutput.get(C_INT, 0));
         Crs crs = gridType.toCrs();
         String units = dataUnitsOutput.getString(0);
         GridDataType dataType = GridDataType.fromCode(dataTypeOutput.get(C_INT, 0));
+
+        // Pack native metadata for round-trip
+        double[] rangeLimits = new double[nativeRangeTable.length];
+        for (int i = 0; i < nativeRangeTable.length; i++) {
+            rangeLimits[i] = nativeRangeTable[i];
+        }
 
         NativeGridMetadata metadata = new NativeGridMetadata(
                 gridType.code(),
@@ -168,7 +174,7 @@ public final class GridReader {
                 maxDataValueOutput.get(C_FLOAT, 0),
                 minDataValueOutput.get(C_FLOAT, 0),
                 meanDataValueOutput.get(C_FLOAT, 0),
-                new RangeHistogram(nativeRangeTable, rangeExceedance)
+                new RangeHistogram(rangeLimits, rangeExceedance)
         );
 
         return DssGrid.fromNative(data, cellsX, cellsY, cellSize, xOrigin, yOrigin,

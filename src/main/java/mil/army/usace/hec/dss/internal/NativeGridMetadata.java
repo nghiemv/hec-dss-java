@@ -7,11 +7,11 @@ package mil.army.usace.hec.dss.internal;
 public record NativeGridMetadata(
         int gridTypeCode,
         int lowerLeftCellX, int lowerLeftCellY,
-        float xCoordOfGridCellZero, float yCoordOfGridCellZero,
+        double xCoordOfGridCellZero, double yCoordOfGridCellZero,
         int srsDefinitionType,
         String srsName, String srsDefinition,
         boolean isInterval, boolean isTimeStamped,
         String timeZoneId, String dataSource,
-        float maxDataValue, float minDataValue, float meanDataValue,
+        double maxDataValue, double minDataValue, double meanDataValue,
         RangeHistogram rangeHistogram
 ) {}
