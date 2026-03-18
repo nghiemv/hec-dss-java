@@ -28,12 +28,12 @@ import java.util.Objects;
  * <p>Create grids from scratch:
  * <pre>{@code
  * DssGrid grid = DssGrid.of(data, 50, 50, 2000.0, 0.0, 0.0,
- *         "MM", Crs.SHG, GridDataType.PERIOD_CUMULATIVE);
+ *         "MM", Crs.SHG, GridDataType.PER_CUM);
  * }</pre>
  *
  * <p>Or derive from an existing grid (common case — same geometry, new data):
  * <pre>{@code
- * DssGrid output = sourceGrid.withData(newData, "MM", GridDataType.PERIOD_CUMULATIVE);
+ * DssGrid output = sourceGrid.withData(newData, "MM", GridDataType.PER_CUM);
  * }</pre>
  */
 public final class DssGrid {
