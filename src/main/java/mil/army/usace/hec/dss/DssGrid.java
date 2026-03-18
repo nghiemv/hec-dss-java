@@ -19,6 +19,10 @@ import java.util.Objects;
  *
  * <p>Missing cell values are represented as {@link Double#NaN}.
  *
+ * <p><b>Precision note:</b> DSS stores grid data as 32-bit floats. This API uses
+ * doubles for convenience, but values will lose precision beyond ~7 significant
+ * digits when written and read back.
+ *
  * <p>Create grids from scratch:
  * <pre>{@code
  * DssGrid grid = DssGrid.of(data, 50, 50, 2000.0, 0.0, 0.0,
