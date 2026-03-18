@@ -17,6 +17,13 @@ public final class DssTimeSeries {
     private final String units;
     private final TimeSeriesDataType type;
 
+    /**
+     * Creates a time series from arrays of times and values.
+     */
+    public static DssTimeSeries of(Instant[] times, double[] values, String units, TimeSeriesDataType type) {
+        return new DssTimeSeries(times, values, units, type);
+    }
+
     public DssTimeSeries(Instant[] times, double[] values, String units, TimeSeriesDataType type) {
         Objects.requireNonNull(times);
         Objects.requireNonNull(values);
