@@ -1,6 +1,7 @@
 package mil.army.usace.hec.dss;
 
 import java.time.Instant;
+import java.time.ZoneId;
 import java.util.Objects;
 import java.util.stream.IntStream;
 
@@ -10,21 +11,36 @@ import java.util.stream.IntStream;
  *
  * <p>Missing values are represented as {@link Double#NaN}.
  * Use {@link #isUndefined(int)} to check, or {@link #dropNa()} to exclude them.
+ *
+ * <p>Times are stored as UTC {@link Instant}s. The optional {@link #timeZone()}
+ * records the time zone the data was originally observed in — DSS stores this
+ * per-record but it does not affect the timestamps themselves.
  */
 public final class DssTimeSeries {
     private final double[] values;
     private final long[] epochSeconds;
     private final String units;
     private final TimeSeriesDataType type;
+    private final ZoneId timeZone;
 
     /**
-     * Creates a time series from arrays of times and values.
+     * Creates a time series with a time zone.
      */
-    public static DssTimeSeries of(Instant[] times, double[] values, String units, TimeSeriesDataType type) {
-        return new DssTimeSeries(times, values, units, type);
+    public static DssTimeSeries of(Instant[] times, double[] values, String units,
+                                   TimeSeriesDataType type, ZoneId timeZone) {
+        return new DssTimeSeries(times, values, units, type, timeZone);
     }
 
-    public DssTimeSeries(Instant[] times, double[] values, String units, TimeSeriesDataType type) {
+    /**
+     * Creates a time series with no time zone.
+     */
+    public static DssTimeSeries of(Instant[] times, double[] values, String units,
+                                   TimeSeriesDataType type) {
+        return new DssTimeSeries(times, values, units, type, null);
+    }
+
+    public DssTimeSeries(Instant[] times, double[] values, String units,
+                         TimeSeriesDataType type, ZoneId timeZone) {
         Objects.requireNonNull(times);
         Objects.requireNonNull(values);
         if (values.length != times.length) {
@@ -38,6 +54,11 @@ public final class DssTimeSeries {
         this.values = values.clone();
         this.units = Objects.requireNonNull(units);
         this.type = Objects.requireNonNull(type);
+        this.timeZone = timeZone;
+    }
+
+    public DssTimeSeries(Instant[] times, double[] values, String units, TimeSeriesDataType type) {
+        this(times, values, units, type, null);
     }
 
     public int size() {
@@ -75,6 +96,14 @@ public final class DssTimeSeries {
     }
 
     /**
+     * Returns the time zone the data was observed in, or null if not specified.
+     * This is metadata only — it does not affect the UTC timestamps.
+     */
+    public ZoneId timeZone() {
+        return timeZone;
+    }
+
+    /**
      * Returns true if the value at the given index is undefined (missing).
      */
     public boolean isUndefined(int index) {
@@ -96,6 +125,6 @@ public final class DssTimeSeries {
             newValues[i] = values[kept[i]];
             newTimes[i] = Instant.ofEpochSecond(epochSeconds[kept[i]]);
         }
-        return new DssTimeSeries(newTimes, newValues, units, type);
+        return new DssTimeSeries(newTimes, newValues, units, type, timeZone);
     }
 }

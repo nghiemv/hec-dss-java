@@ -85,6 +85,12 @@ public final class TimeSeriesReader {
         int granularity = timeGranularitySecondsOutput.get(C_INT, 0);
         String units = unitsOutput.getString(0);
         TimeSeriesDataType type = TimeSeriesDataType.fromDssString(typeOutput.getString(0));
+        String timezoneStr = timezoneOutput.getString(0);
+        java.time.ZoneId timeZone = null;
+        if (!timezoneStr.isEmpty()) {
+            try { timeZone = java.time.ZoneId.of(timezoneStr); }
+            catch (Exception ignored) { /* malformed timezone string */ }
+        }
 
         double[] values = valueArrayOutput.asSlice(0,
                 (long) count * ValueLayout.JAVA_DOUBLE.byteSize())
@@ -102,7 +108,7 @@ public final class TimeSeriesReader {
             }
         }
 
-        return new DssTimeSeries(times, values, units, type);
+        return new DssTimeSeries(times, values, units, type, timeZone);
     }
 
     private static Instant[] readRange(DssSession session, DssPathname pathname) {
