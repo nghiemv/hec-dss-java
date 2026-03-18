@@ -45,8 +45,8 @@ public final class LocationInfoReader {
 
         if (status != 0) {
             throw new DssException(
-                    "Failed to retrieve location info '%s' from '%s': native status code %d"
-                            .formatted(pathname, session.filePath(), status));
+                    "Failed to retrieve location info '%s' from '%s': %s"
+                            .formatted(pathname, session.filePath(), NativeStatusCode.describe(status)));
         }
 
         DssCrs crs = CrsMapping.toCrs(

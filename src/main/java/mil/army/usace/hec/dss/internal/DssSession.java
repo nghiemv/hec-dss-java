@@ -36,7 +36,7 @@ public final class DssSession implements AutoCloseable {
 
             if (status != 0) {
                 throw new DssException(
-                        "Cannot open DSS file '%s': native status code %d".formatted(filePath, status));
+                        "Cannot open DSS file '%s': %s".formatted(filePath, NativeStatusCode.describe(status)));
             }
 
             MemorySegment dssPointer = pointerHolder.get(ValueLayout.ADDRESS, 0);
@@ -72,7 +72,7 @@ public final class DssSession implements AutoCloseable {
             int status = hecdss_h.hec_dss_close(dssPointer);
             if (status != 0) {
                 logger.severe("Failed to close DSS file '%s': status=%d"
-                        .formatted(filePath, status));
+                        .formatted(filePath, NativeStatusCode.describe(status)));
             }
         } finally {
             arena.close();

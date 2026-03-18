@@ -141,8 +141,8 @@ public final class GridWriter {
 
         if (status != 0) {
             throw new DssException(
-                    "Failed to write grid '%s' to '%s': native status code %d"
-                            .formatted(pathname, session.filePath(), status));
+                    "Failed to write grid '%s' to '%s': %s"
+                            .formatted(pathname, session.filePath(), NativeStatusCode.describe(status)));
         }
     }
 }

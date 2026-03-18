@@ -30,8 +30,8 @@ public final class ArrayWriter {
 
         if (status != 0) {
             throw new DssException(
-                    "Failed to write array '%s' to '%s': native status code %d"
-                            .formatted(pathname, session.filePath(), status));
+                    "Failed to write array '%s' to '%s': %s"
+                            .formatted(pathname, session.filePath(), NativeStatusCode.describe(status)));
         }
     }
 }

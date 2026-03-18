@@ -13,8 +13,8 @@ public final class DeleteOperation {
         int status = hecdss_h.hec_dss_delete(session.dssPointer(), pathnameInput);
         if (status != 0) {
             throw new DssException(
-                    "Failed to delete '%s' from '%s': native status code %d"
-                            .formatted(pathname, session.filePath(), status));
+                    "Failed to delete '%s' from '%s': %s"
+                            .formatted(pathname, session.filePath(), NativeStatusCode.describe(status)));
         }
     }
 }

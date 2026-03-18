@@ -28,8 +28,8 @@ public final class ArrayReader {
 
         if (status != 0) {
             throw new DssException(
-                    "Failed to get array info for '%s' from '%s': native status code %d"
-                            .formatted(pathname, session.filePath(), status));
+                    "Failed to get array info for '%s' from '%s': %s"
+                            .formatted(pathname, session.filePath(), NativeStatusCode.describe(status)));
         }
 
         int intCount = intCountOutput.get(C_INT, 0);
@@ -50,8 +50,8 @@ public final class ArrayReader {
 
         if (status != 0) {
             throw new DssException(
-                    "Failed to retrieve array '%s' from '%s': native status code %d"
-                            .formatted(pathname, session.filePath(), status));
+                    "Failed to retrieve array '%s' from '%s': %s"
+                            .formatted(pathname, session.filePath(), NativeStatusCode.describe(status)));
         }
 
         // Widen all native types to double and concatenate

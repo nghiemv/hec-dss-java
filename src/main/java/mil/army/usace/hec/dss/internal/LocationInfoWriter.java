@@ -34,8 +34,8 @@ public final class LocationInfoWriter {
 
         if (status != 0) {
             throw new DssException(
-                    "Failed to write location info '%s' to '%s': native status code %d"
-                            .formatted(pathname, session.filePath(), status));
+                    "Failed to write location info '%s' to '%s': %s"
+                            .formatted(pathname, session.filePath(), NativeStatusCode.describe(status)));
         }
     }
 }

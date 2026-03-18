@@ -24,8 +24,8 @@ public final class TextWriter {
 
         if (status != 0) {
             throw new DssException(
-                    "Failed to write text '%s' to '%s': native status code %d"
-                            .formatted(pathname, session.filePath(), status));
+                    "Failed to write text '%s' to '%s': %s"
+                            .formatted(pathname, session.filePath(), NativeStatusCode.describe(status)));
         }
     }
 }

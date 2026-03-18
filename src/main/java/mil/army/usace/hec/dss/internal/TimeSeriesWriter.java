@@ -54,8 +54,8 @@ public final class TimeSeriesWriter {
 
         if (status != 0) {
             throw new DssException(
-                    "Failed to write regular time series '%s' to '%s': native status code %d"
-                            .formatted(pathname, session.filePath(), status));
+                    "Failed to write regular time series '%s' to '%s': %s"
+                            .formatted(pathname, session.filePath(), NativeStatusCode.describe(status)));
         }
     }
 
@@ -102,8 +102,8 @@ public final class TimeSeriesWriter {
 
         if (status != 0) {
             throw new DssException(
-                    "Failed to write irregular time series '%s' to '%s': native status code %d"
-                            .formatted(pathname, session.filePath(), status));
+                    "Failed to write irregular time series '%s' to '%s': %s"
+                            .formatted(pathname, session.filePath(), NativeStatusCode.describe(status)));
         }
     }
 }

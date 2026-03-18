@@ -16,8 +16,8 @@ public final class SqueezeOperation {
             int status = hecdss_h.hec_dss_squeeze(filenameInput);
             if (status != 0) {
                 throw new DssException(
-                        "Failed to squeeze '%s': native status code %d"
-                                .formatted(filename, status));
+                        "Failed to squeeze '%s': %s"
+                                .formatted(filename, NativeStatusCode.describe(status)));
             }
         }
     }

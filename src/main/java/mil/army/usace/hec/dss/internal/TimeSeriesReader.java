@@ -45,8 +45,8 @@ public final class TimeSeriesReader {
 
         if (status != 0) {
             throw new DssException(
-                    "Failed to get time series sizes for '%s' from '%s': native status code %d"
-                            .formatted(pathname, session.filePath(), status));
+                    "Failed to get time series sizes for '%s' from '%s': %s"
+                            .formatted(pathname, session.filePath(), NativeStatusCode.describe(status)));
         }
 
         int numberValues = numberValuesOutput.get(C_INT, 0);
@@ -76,8 +76,8 @@ public final class TimeSeriesReader {
 
         if (status != 0) {
             throw new DssException(
-                    "Failed to retrieve time series '%s' from '%s': native status code %d (time window: %s to %s)"
-                            .formatted(pathname, session.filePath(), status,
+                    "Failed to retrieve time series '%s' from '%s': %s (time window: %s to %s)"
+                            .formatted(pathname, session.filePath(), NativeStatusCode.describe(status),
                                     start, end));
         }
 
@@ -128,8 +128,8 @@ public final class TimeSeriesReader {
 
         if (status != 0) {
             throw new DssException(
-                    "Failed to get date range for '%s' from '%s': native status code %d"
-                            .formatted(pathname, session.filePath(), status));
+                    "Failed to get date range for '%s' from '%s': %s"
+                            .formatted(pathname, session.filePath(), NativeStatusCode.describe(status)));
         }
 
         Instant start = julianToInstant(session,

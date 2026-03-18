@@ -70,8 +70,8 @@ public final class GridReader {
 
         if (status != 0) {
             throw new DssException(
-                    "Failed to get grid info for '%s' from '%s': native status code %d"
-                            .formatted(pathname, session.filePath(), status));
+                    "Failed to get grid info for '%s' from '%s': %s"
+                            .formatted(pathname, session.filePath(), NativeStatusCode.describe(status)));
         }
 
         int cellsX = numberOfCellsXOutput.get(C_INT, 0);
@@ -109,8 +109,8 @@ public final class GridReader {
 
         if (status != 0) {
             throw new DssException(
-                    "Failed to retrieve grid data '%s' from '%s': native status code %d"
-                            .formatted(pathname, session.filePath(), status));
+                    "Failed to retrieve grid data '%s' from '%s': %s"
+                            .formatted(pathname, session.filePath(), NativeStatusCode.describe(status)));
         }
 
         // Extract native values
