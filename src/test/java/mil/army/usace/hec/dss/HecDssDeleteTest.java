@@ -27,9 +27,9 @@ class HecDssDeleteTest {
         assertEquals(ts.size(), written.size());
 
         var catalog = HecDss.getCatalog(dssFile);
-        for (DssPathname p : catalog) {
-            if (p.fPart().equals("OBS-to-delete")) {
-                HecDss.delete(dssFile, p.toString());
+        for (DssCatalogEntry entry : catalog) {
+            if (entry.pathname().fPart().equals("OBS-to-delete")) {
+                HecDss.delete(dssFile, entry.pathname().toString());
             }
         }
 

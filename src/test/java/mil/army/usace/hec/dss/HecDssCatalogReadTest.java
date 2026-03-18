@@ -12,7 +12,12 @@ class HecDssCatalogReadTest {
     @Test
     void readAllCatalogEntries() {
         Path dssFile = TestUtil.getResourceFile("examples-all-data-types.dss");
-        List<DssPathname> catalog = HecDss.getCatalog(dssFile);
+        List<DssCatalogEntry> catalog = HecDss.getCatalog(dssFile);
         assertEquals(208, catalog.size());
+        // Every entry should have a pathname and a record type
+        for (DssCatalogEntry entry : catalog) {
+            assertNotNull(entry.pathname());
+            assertNotNull(entry.recordType());
+        }
     }
 }

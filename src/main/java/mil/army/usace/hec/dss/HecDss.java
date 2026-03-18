@@ -170,19 +170,9 @@ public final class HecDss {
     // ---- Catalog ----
 
     /**
-     * Returns all pathnames in a DSS file.
+     * Returns all catalog entries (pathname + record type) in a DSS file.
      */
-    public static List<DssPathname> getCatalog(Path file) {
-        try (DssSession session = DssSession.open(file)) {
-            return CatalogReader.read(session);
-        }
-    }
-
-    /**
-     * Returns all pathnames with their record types in a single pass.
-     * More efficient than calling {@link #getRecordType} per pathname.
-     */
-    public static List<DssCatalogEntry> getCatalogWithTypes(Path file) {
+    public static List<DssCatalogEntry> getCatalog(Path file) {
         try (DssSession session = DssSession.open(file)) {
             return CatalogReader.readWithTypes(session);
         }
