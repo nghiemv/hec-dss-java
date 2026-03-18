@@ -179,6 +179,21 @@ public final class HecDss {
     }
 
     /**
+     * Returns catalog entries matching a pathname pattern.
+     * Use {@code *} in any part to match all values for that part.
+     *
+     * @param pathnamePattern DSS pathname with wildcards, e.g. {@code "/&#42;/&#42;/FLOW/&#42;/&#42;/&#42;/"}
+     */
+    public static List<DssCatalogEntry> getCatalog(Path file, String pathnamePattern) {
+        DssPathname filter = DssPathname.parse(pathnamePattern)
+                .orElseThrow(() -> new DssException(
+                        "Invalid pathname pattern '%s': expected /A/B/C/D/E/F/".formatted(pathnamePattern)));
+        try (DssSession session = DssSession.open(file)) {
+            return CatalogReader.readWithTypes(session, filter);
+        }
+    }
+
+    /**
      * Returns the number of records in a DSS file.
      */
     public static int getRecordCount(Path file) {
