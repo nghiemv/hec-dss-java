@@ -19,9 +19,11 @@ import java.util.Objects;
  *
  * <p>Missing cell values are represented as {@link Double#NaN}.
  *
- * <p><b>Precision note:</b> DSS stores grid data as 32-bit floats. This API uses
- * doubles for convenience, but values will lose precision beyond ~7 significant
- * digits when written and read back.
+ * <p><b>Precision note:</b> DSS currently stores grid data as 32-bit floats
+ * ({@code GRID_FLOAT} in the native library), though the format has infrastructure
+ * for double storage ({@code GRID_DOUBLE}). This API uses doubles so it will not
+ * require a breaking change if/when double storage is enabled. Until then, values
+ * lose precision beyond ~7 significant digits on round-trip.
  *
  * <p>Create grids from scratch:
  * <pre>{@code
