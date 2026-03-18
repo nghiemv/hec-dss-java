@@ -10,6 +10,12 @@ import java.util.List;
 /**
  * Static entry point for DSS file operations.
  * All methods are self-contained — no resource management required.
+ *
+ * <p><b>Concurrency:</b> DSS files support multiple concurrent readers but
+ * only one writer at a time. The native library handles locking internally.
+ * Each method call opens and closes its own session, so concurrent reads
+ * from multiple threads are safe. Concurrent writes from different threads
+ * or processes will be serialized by the native lock.
  */
 public final class HecDss {
     private HecDss() {}
