@@ -15,6 +15,11 @@ import java.util.stream.IntStream;
  * <p>Times are stored as UTC {@link Instant}s. The optional {@link #timeZone()}
  * records the time zone the data was originally observed in — DSS stores this
  * per-record but it does not affect the timestamps themselves.
+ *
+ * <p>Quality flags are optional per-value integers stored by DSS. The meaning
+ * of individual bits is application-defined (e.g. screened, valid, missing,
+ * rejected). Use {@link #quality(int)} to access per-value flags, or
+ * {@link #hasQuality()} to check if quality data is present.
  */
 public final class DssTimeSeries {
     private final double[] values;
@@ -22,30 +27,43 @@ public final class DssTimeSeries {
     private final String units;
     private final TimeSeriesDataType type;
     private final ZoneId timeZone;
+    private final int[] quality;
+
+    /**
+     * Creates a time series with timezone and quality flags.
+     */
+    public static DssTimeSeries of(Instant[] times, double[] values, String units,
+                                   TimeSeriesDataType type, ZoneId timeZone, int[] quality) {
+        return new DssTimeSeries(times, values, units, type, timeZone, quality);
+    }
 
     /**
      * Creates a time series with a time zone.
      */
     public static DssTimeSeries of(Instant[] times, double[] values, String units,
                                    TimeSeriesDataType type, ZoneId timeZone) {
-        return new DssTimeSeries(times, values, units, type, timeZone);
+        return new DssTimeSeries(times, values, units, type, timeZone, null);
     }
 
     /**
-     * Creates a time series with no time zone.
+     * Creates a time series with no time zone or quality flags.
      */
     public static DssTimeSeries of(Instant[] times, double[] values, String units,
                                    TimeSeriesDataType type) {
-        return new DssTimeSeries(times, values, units, type, null);
+        return new DssTimeSeries(times, values, units, type, null, null);
     }
 
     public DssTimeSeries(Instant[] times, double[] values, String units,
-                         TimeSeriesDataType type, ZoneId timeZone) {
+                         TimeSeriesDataType type, ZoneId timeZone, int[] quality) {
         Objects.requireNonNull(times);
         Objects.requireNonNull(values);
         if (values.length != times.length) {
             throw new IllegalArgumentException(
                     "values length (%d) != times length (%d)".formatted(values.length, times.length));
+        }
+        if (quality != null && quality.length != values.length) {
+            throw new IllegalArgumentException(
+                    "quality length (%d) != values length (%d)".formatted(quality.length, values.length));
         }
         this.epochSeconds = new long[times.length];
         for (int i = 0; i < times.length; i++) {
@@ -55,10 +73,16 @@ public final class DssTimeSeries {
         this.units = Objects.requireNonNull(units);
         this.type = Objects.requireNonNull(type);
         this.timeZone = timeZone;
+        this.quality = quality != null ? quality.clone() : null;
+    }
+
+    public DssTimeSeries(Instant[] times, double[] values, String units,
+                         TimeSeriesDataType type, ZoneId timeZone) {
+        this(times, values, units, type, timeZone, null);
     }
 
     public DssTimeSeries(Instant[] times, double[] values, String units, TimeSeriesDataType type) {
-        this(times, values, units, type, null);
+        this(times, values, units, type, null, null);
     }
 
     public int size() {
@@ -103,6 +127,32 @@ public final class DssTimeSeries {
         return timeZone;
     }
 
+    /** Returns true if this time series has quality flag data. */
+    public boolean hasQuality() {
+        return quality != null;
+    }
+
+    /**
+     * Returns the quality flag for the value at the given index.
+     * Quality flags are application-defined bit fields (0 typically means no flags).
+     *
+     * @throws IllegalStateException if no quality data is present ({@link #hasQuality()} is false)
+     */
+    public int quality(int index) {
+        if (quality == null) {
+            throw new IllegalStateException("No quality data present");
+        }
+        Objects.checkIndex(index, quality.length);
+        return quality[index];
+    }
+
+    /**
+     * Returns a copy of all quality flags, or null if no quality data is present.
+     */
+    public int[] qualityFlags() {
+        return quality != null ? quality.clone() : null;
+    }
+
     /**
      * Returns true if the value at the given index is undefined (missing).
      */
@@ -121,10 +171,14 @@ public final class DssTimeSeries {
         if (kept.length == values.length) return this;
         double[] newValues = new double[kept.length];
         Instant[] newTimes = new Instant[kept.length];
+        int[] newQuality = quality != null ? new int[kept.length] : null;
         for (int i = 0; i < kept.length; i++) {
             newValues[i] = values[kept[i]];
             newTimes[i] = Instant.ofEpochSecond(epochSeconds[kept[i]]);
+            if (newQuality != null) {
+                newQuality[i] = quality[kept[i]];
+            }
         }
-        return new DssTimeSeries(newTimes, newValues, units, type, timeZone);
+        return new DssTimeSeries(newTimes, newValues, units, type, timeZone, newQuality);
     }
 }

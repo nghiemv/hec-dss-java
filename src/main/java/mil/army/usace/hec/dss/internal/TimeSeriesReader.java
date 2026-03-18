@@ -108,7 +108,20 @@ public final class TimeSeriesReader {
             }
         }
 
-        return new DssTimeSeries(times, values, units, type, timeZone);
+        // Extract quality flags (null if all zeros / no quality data)
+        int[] rawQuality = qualityOutput.asSlice(0,
+                (long) count * ValueLayout.JAVA_INT.byteSize())
+                .toArray(ValueLayout.JAVA_INT);
+        int[] quality = null;
+        if (qualityWidth > 0) {
+            boolean hasAny = false;
+            for (int q : rawQuality) {
+                if (q != 0) { hasAny = true; break; }
+            }
+            if (hasAny) quality = rawQuality;
+        }
+
+        return new DssTimeSeries(times, values, units, type, timeZone, quality);
     }
 
     private static Instant[] readRange(DssSession session, DssPathname pathname) {

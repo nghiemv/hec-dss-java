@@ -38,7 +38,11 @@ public final class TimeSeriesWriter {
         MemorySegment startDateInput = arena.allocateFrom(time.startDate());
         MemorySegment startTimeInput = arena.allocateFrom(time.startTime());
         MemorySegment valueArray = NativeBuffers.allocateDoubles(arena, values);
-        MemorySegment qualityArray = arena.allocate(C_INT, data.size());
+        int[] qFlags = data.qualityFlags();
+        MemorySegment qualityArray = qFlags != null
+                ? NativeBuffers.allocateInts(arena, qFlags)
+                : arena.allocate(C_INT, data.size());
+        int qualitySize = qFlags != null ? 1 : 0;
         MemorySegment unitsInput = arena.allocateFrom(data.units());
         MemorySegment typeInput = arena.allocateFrom(data.type().dssString());
         String tz = data.timeZone() != null ? data.timeZone().getId() : "";
@@ -48,7 +52,7 @@ public final class TimeSeriesWriter {
                 session.dssPointer(), pathnameInput,
                 startDateInput, startTimeInput,
                 valueArray, data.size(),
-                qualityArray, 0,
+                qualityArray, qualitySize,
                 0, unitsInput, typeInput, timezoneInput, 0
         );
 
@@ -86,7 +90,11 @@ public final class TimeSeriesWriter {
         MemorySegment baseDateInput = arena.allocateFrom(baseDateFmt.startDate());
         MemorySegment timesInput = NativeBuffers.allocateInts(arena, timeOffsets);
         MemorySegment valueArray = NativeBuffers.allocateDoubles(arena, data.values());
-        MemorySegment qualityArray = arena.allocate(C_INT, data.size());
+        int[] qFlags = data.qualityFlags();
+        MemorySegment qualityArray = qFlags != null
+                ? NativeBuffers.allocateInts(arena, qFlags)
+                : arena.allocate(C_INT, data.size());
+        int qualitySize = qFlags != null ? 1 : 0;
         MemorySegment unitsInput = arena.allocateFrom(data.units());
         MemorySegment typeInput = arena.allocateFrom(data.type().dssString());
         String tz = data.timeZone() != null ? data.timeZone().getId() : "";
@@ -96,7 +104,7 @@ public final class TimeSeriesWriter {
                 session.dssPointer(), pathnameInput,
                 baseDateInput, timesInput, granularity,
                 valueArray, data.size(),
-                qualityArray, 0,
+                qualityArray, qualitySize,
                 0, unitsInput, typeInput, timezoneInput, 0
         );
 
