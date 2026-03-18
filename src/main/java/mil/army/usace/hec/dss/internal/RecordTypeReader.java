@@ -14,7 +14,7 @@ public final class RecordTypeReader {
         return fromNativeCode(code);
     }
 
-    private static DssRecordType fromNativeCode(int code) {
+    static DssRecordType fromNativeCode(int code) {
         if (code >= 90 && code <= 93) return DssRecordType.ARRAY;
         if (code >= 100 && code < 110) return DssRecordType.REGULAR_TIME_SERIES;
         if (code >= 110 && code < 200) return DssRecordType.IRREGULAR_TIME_SERIES;
