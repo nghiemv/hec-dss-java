@@ -152,7 +152,7 @@ public final class GridReader {
         // Map GridType → DssCrs
         GridType gridType = GridType.fromCode(typeOutput.get(C_INT, 0));
         DssCrs crs = gridType.toCrs();
-        String units = dataUnitsOutput.getString(0);
+        String units = NativeStrings.normalize(dataUnitsOutput.getString(0));
         GridDataType dataType = GridDataType.fromCode(dataTypeOutput.get(C_INT, 0));
 
         // Pack native metadata for round-trip

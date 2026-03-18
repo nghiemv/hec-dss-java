@@ -26,7 +26,12 @@ public final class DssTimeZone {
         try {
             return ZoneId.of(dssTimezoneString);
         } catch (Exception ignored) {
-            return null;
+            // Try uppercase — DSS files may have "utc" or "est"
+            try {
+                return ZoneId.of(dssTimezoneString.toUpperCase(java.util.Locale.ROOT));
+            } catch (Exception ignored2) {
+                return null;
+            }
         }
     }
 

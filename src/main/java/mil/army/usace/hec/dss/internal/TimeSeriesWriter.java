@@ -17,8 +17,10 @@ public final class TimeSeriesWriter {
     private TimeSeriesWriter() {}
 
     public static void write(DssSession session, DssPathname pathname, DssTimeSeries data) {
-        String ePart = pathname.ePart().toUpperCase(java.util.Locale.ROOT);
-        if (ePart.startsWith("IR-")) {
+        // Normalize E-part to canonical casing for native library
+        String normalizedEPart = NativeStrings.normalizeInterval(pathname.ePart());
+        pathname = pathname.with(DssPathname.Part.E, normalizedEPart);
+        if (normalizedEPart.toUpperCase(java.util.Locale.ROOT).startsWith("IR-")) {
             writeIrregular(session, pathname, data);
         } else {
             writeRegular(session, pathname, data);
