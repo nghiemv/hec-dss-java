@@ -1,8 +1,6 @@
 package mil.army.usace.hec.dss.internal;
 
-import mil.army.usace.hec.dss.DssException;
-import mil.army.usace.hec.dss.DssPairedData;
-import mil.army.usace.hec.dss.DssPathname;
+import mil.army.usace.hec.dss.*;
 
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
@@ -87,8 +85,8 @@ public final class PairedDataReader {
         String[] labels = parseLabels(labelsOutput, actualLabelsLen, numberCurves);
         String xUnits = xUnitsOutput.getString(0);
         String yUnits = yUnitsOutput.getString(0);
-        String xType = xTypeOutput.getString(0);
-        String yType = yTypeOutput.getString(0);
+        Parameter xType = Parameter.of(xTypeOutput.getString(0));
+        Parameter yType = Parameter.of(yTypeOutput.getString(0));
 
         // Convert column-major flat array to per-curve arrays
         double[][] curves = new double[numberCurves][numberOrdinates];

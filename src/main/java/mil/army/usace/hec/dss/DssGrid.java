@@ -80,7 +80,7 @@ public final class DssGrid {
      * @param cellSize cell spacing in CRS units (must be positive)
      * @param xOrigin  west edge of the grid
      * @param yOrigin  south edge of the grid
-     * @param units    data units (e.g. "MM", "IN")
+     * @param units    data units
      * @param crs      coordinate reference system
      * @param dataType what the cell values represent over time
      */
@@ -149,7 +149,7 @@ public final class DssGrid {
 
     // ---- Semantics ----
 
-    /** Data units (e.g. "MM", "IN"). */
+    /** Data units. */
     public String units() { return units; }
 
     /** Coordinate reference system. */

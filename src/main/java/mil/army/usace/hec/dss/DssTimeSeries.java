@@ -15,9 +15,9 @@ public final class DssTimeSeries {
     private final double[] values;
     private final long[] epochSeconds;
     private final String units;
-    private final String type;
+    private final TimeSeriesDataType type;
 
-    public DssTimeSeries(Instant[] times, double[] values, String units, String type) {
+    public DssTimeSeries(Instant[] times, double[] values, String units, TimeSeriesDataType type) {
         Objects.requireNonNull(times);
         Objects.requireNonNull(values);
         if (values.length != times.length) {
@@ -63,7 +63,7 @@ public final class DssTimeSeries {
         return units;
     }
 
-    public String type() {
+    public TimeSeriesDataType type() {
         return type;
     }
 

@@ -31,9 +31,9 @@ public final class PairedDataWriter {
         MemorySegment ordinatesInput = NativeBuffers.allocateDoubles(arena, ordinates);
         MemorySegment valuesInput = NativeBuffers.allocateDoubles(arena, flatValues);
         MemorySegment xUnitsInput = arena.allocateFrom(data.xUnits());
-        MemorySegment xTypeInput = arena.allocateFrom(data.xType());
+        MemorySegment xTypeInput = arena.allocateFrom(data.xType().dssString());
         MemorySegment yUnitsInput = arena.allocateFrom(data.yUnits());
-        MemorySegment yTypeInput = arena.allocateFrom(data.yType());
+        MemorySegment yTypeInput = arena.allocateFrom(data.yType().dssString());
         MemorySegment timezoneInput = arena.allocateFrom("");
 
         // Pack labels as null-separated bytes

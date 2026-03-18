@@ -13,8 +13,8 @@ public final class DssPairedData {
     private final String[] labels;
     private final String xUnits;
     private final String yUnits;
-    private final String xType;
-    private final String yType;
+    private final Parameter xType;
+    private final Parameter yType;
 
     /**
      * Creates paired data from ordinates and per-curve y-value arrays.
@@ -24,7 +24,7 @@ public final class DssPairedData {
      * @param labels    curve labels (may be empty or null)
      */
     public DssPairedData(double[] ordinates, double[][] curves, String[] labels,
-                         String xUnits, String yUnits, String xType, String yType) {
+                         String xUnits, String yUnits, Parameter xType, Parameter yType) {
         Objects.requireNonNull(ordinates);
         Objects.requireNonNull(curves);
         if (curves.length < 1) {
@@ -57,7 +57,7 @@ public final class DssPairedData {
      */
     public static DssPairedData of(double[] x, double[] y,
                                    String xUnits, String yUnits,
-                                   String xType, String yType) {
+                                   Parameter xType, Parameter yType) {
         return new DssPairedData(x, new double[][]{y}, null, xUnits, yUnits, xType, yType);
     }
 
@@ -67,8 +67,8 @@ public final class DssPairedData {
     public String[] labels() { return labels.clone(); }
     public String xUnits() { return xUnits; }
     public String yUnits() { return yUnits; }
-    public String xType() { return xType; }
-    public String yType() { return yType; }
+    public Parameter xType() { return xType; }
+    public Parameter yType() { return yType; }
 
     /**
      * Returns the y-value at the given ordinate index for the given curve.

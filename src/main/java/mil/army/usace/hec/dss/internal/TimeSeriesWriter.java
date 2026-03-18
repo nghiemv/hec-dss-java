@@ -40,7 +40,7 @@ public final class TimeSeriesWriter {
         MemorySegment valueArray = NativeBuffers.allocateDoubles(arena, values);
         MemorySegment qualityArray = arena.allocate(C_INT, data.size());
         MemorySegment unitsInput = arena.allocateFrom(data.units());
-        MemorySegment typeInput = arena.allocateFrom(data.type());
+        MemorySegment typeInput = arena.allocateFrom(data.type().dssString());
         MemorySegment timezoneInput = arena.allocateFrom("");
 
         int status = hecdss_h.hec_dss_tsStoreRegular(
@@ -87,7 +87,7 @@ public final class TimeSeriesWriter {
         MemorySegment valueArray = NativeBuffers.allocateDoubles(arena, data.values());
         MemorySegment qualityArray = arena.allocate(C_INT, data.size());
         MemorySegment unitsInput = arena.allocateFrom(data.units());
-        MemorySegment typeInput = arena.allocateFrom(data.type());
+        MemorySegment typeInput = arena.allocateFrom(data.type().dssString());
         MemorySegment timezoneInput = arena.allocateFrom("");
 
         int status = hecdss_h.hec_dss_tsStoreIregular(

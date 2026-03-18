@@ -1,8 +1,6 @@
 package mil.army.usace.hec.dss.internal;
 
-import mil.army.usace.hec.dss.DssPathname;
-import mil.army.usace.hec.dss.DssException;
-import mil.army.usace.hec.dss.DssTimeSeries;
+import mil.army.usace.hec.dss.*;
 
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
@@ -86,7 +84,7 @@ public final class TimeSeriesReader {
         int count = numberValuesReadOutput.get(C_INT, 0);
         int granularity = timeGranularitySecondsOutput.get(C_INT, 0);
         String units = unitsOutput.getString(0);
-        String type = typeOutput.getString(0);
+        TimeSeriesDataType type = TimeSeriesDataType.fromDssString(typeOutput.getString(0));
 
         double[] values = valueArrayOutput.asSlice(0,
                 (long) count * ValueLayout.JAVA_DOUBLE.byteSize())

@@ -24,7 +24,7 @@ class HecDssTimeSeriesWriteTest {
             times[i] = Instant.ofEpochSecond(start.getEpochSecond() + i * 3600);
         }
 
-        DssTimeSeries input = new DssTimeSeries(times, values, "CFS", "INST-VAL");
+        DssTimeSeries input = new DssTimeSeries(times, values, "CFS", TimeSeriesDataType.INST_VAL);
         HecDss.writeTimeSeries(dssFile, pathname, input);
 
         DssTimeSeries output = HecDss.readTimeSeries(dssFile, pathname);
@@ -32,7 +32,7 @@ class HecDssTimeSeriesWriteTest {
         assertEquals(100.0, output.value(0));
         assertEquals(500.0, output.value(4));
         assertEquals("CFS", output.units());
-        assertEquals("INST-VAL", output.type());
+        assertEquals(TimeSeriesDataType.INST_VAL, output.type());
     }
 
     @Test
@@ -93,7 +93,7 @@ class HecDssTimeSeriesWriteTest {
                 ZonedDateTime.parse("2010-11-05T16:00:00Z").toInstant()
         };
 
-        DssTimeSeries input = new DssTimeSeries(times, values, "CFS", "INST-VAL");
+        DssTimeSeries input = new DssTimeSeries(times, values, "CFS", TimeSeriesDataType.INST_VAL);
         HecDss.writeTimeSeries(dssFile, pathname, input);
 
         DssTimeSeries output = HecDss.readTimeSeries(dssFile, pathname);

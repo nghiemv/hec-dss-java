@@ -16,7 +16,7 @@ class HecDssPairedDataWriteTest {
         double[] ordinates = {0.0, 1.0, 2.0, 3.0, 4.0};
         double[] values = {0.0, 10.0, 50.0, 150.0, 300.0};
         DssPairedData input = DssPairedData.of(ordinates, values,
-                "FEET", "CFS", "Stage", "Flow");
+                "FEET", "CFS", Parameter.STAGE, Parameter.FLOW);
 
         HecDss.writePairedData(dssFile, pathname, input);
 
@@ -61,7 +61,7 @@ class HecDssPairedDataWriteTest {
         String[] labels = {"x plus 0", "x plus 1", "x plus 2"};
         DssPairedData input = new DssPairedData(
                 ordinates, curves, labels,
-                "cm", "CFS", "Stage", "Flow"
+                "cm", "CFS", Parameter.STAGE, Parameter.FLOW
         );
 
         HecDss.writePairedData(dssFile, pathname, input);
