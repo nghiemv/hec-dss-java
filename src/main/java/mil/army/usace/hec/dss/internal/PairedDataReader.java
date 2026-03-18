@@ -88,11 +88,15 @@ public final class PairedDataReader {
         String xType = xTypeOutput.getString(0);
         String yType = yTypeOutput.getString(0);
 
-        // Convert column-major flat array to per-curve arrays
+        // Convert sentinel values to NaN and rearrange to per-curve arrays
         double[][] curves = new double[numberCurves][numberOrdinates];
         for (int i = 0; i < numberOrdinates; i++) {
+            if (ordinates[i] == InternalConstants.UNDEFINED_DOUBLE) {
+                ordinates[i] = Double.NaN;
+            }
             for (int c = 0; c < numberCurves; c++) {
-                curves[c][i] = flatValues[i * numberCurves + c];
+                double v = flatValues[i * numberCurves + c];
+                curves[c][i] = (v == InternalConstants.UNDEFINED_DOUBLE) ? Double.NaN : v;
             }
         }
 
