@@ -5,6 +5,8 @@ import java.util.Objects;
 /**
  * Paired data (x/y curves) read from or written to a DSS file.
  * Access y-values through {@link #curve(int)} or {@link #yValue(int, int)}.
+ *
+ * <p>Missing values are represented as {@link Double#NaN}.
  */
 public final class DssPairedData {
     private final double[] ordinates;

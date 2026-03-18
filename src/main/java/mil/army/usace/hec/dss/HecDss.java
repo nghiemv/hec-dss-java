@@ -25,6 +25,10 @@ public final class HecDss {
     /**
      * Reads a time series record from a DSS file.
      * Works for both regular and irregular time series.
+     * The D-part (date) in the pathname is ignored — all available data is returned.
+     *
+     * @throws DssException if the file does not exist, is not a valid DSS7 file,
+     *                      or the record is not a time series
      */
     public static DssTimeSeries readTimeSeries(Path file, String pathname) {
         requireFileExists(file);
@@ -40,6 +44,10 @@ public final class HecDss {
     /**
      * Reads a time series record within a time window.
      * Works for both regular and irregular time series.
+     * The D-part (date) in the pathname is ignored — the time window filters the data.
+     *
+     * @throws DssException if the file does not exist, is not a valid DSS7 file,
+     *                      or the record is not a time series
      */
     public static DssTimeSeries readTimeSeries(Path file, String pathname,
                                                Instant start, Instant end) {
@@ -68,6 +76,9 @@ public final class HecDss {
 
     /**
      * Reads paired data (x/y curves) from a DSS file.
+     *
+     * @throws DssException if the file does not exist, is not a valid DSS7 file,
+     *                      or the record is not paired data
      */
     public static DssPairedData readPairedData(Path file, String pathname) {
         requireFileExists(file);
@@ -92,6 +103,9 @@ public final class HecDss {
 
     /**
      * Reads a grid record from a DSS file.
+     *
+     * @throws DssException if the file does not exist, is not a valid DSS7 file,
+     *                      or the record is not a grid
      */
     public static DssGrid readGrid(Path file, String pathname) {
         requireFileExists(file);
@@ -116,6 +130,8 @@ public final class HecDss {
 
     /**
      * Reads an array record from a DSS file.
+     *
+     * @throws DssException if the file does not exist or is not a valid DSS7 file
      */
     public static double[] readArray(Path file, String pathname) {
         requireFileExists(file);
@@ -139,6 +155,8 @@ public final class HecDss {
 
     /**
      * Reads a text record from a DSS file.
+     *
+     * @throws DssException if the file does not exist or is not a valid DSS7 file
      */
     public static String readText(Path file, String pathname) {
         requireFileExists(file);
@@ -162,6 +180,8 @@ public final class HecDss {
 
     /**
      * Reads location metadata from a DSS file.
+     *
+     * @throws DssException if the file does not exist or is not a valid DSS7 file
      */
     public static DssLocationInfo readLocationInfo(Path file, String pathname) {
         requireFileExists(file);
