@@ -6,6 +6,10 @@ package mil.army.usace.hec.dss;
  * <p>These are convenience constants — DSS accepts any unit string.
  * Use these for discoverability; pass any string if your unit isn't listed.
  *
+ * <p><b>Case note:</b> DSS stores unit strings as-is with no case normalization.
+ * Use case-insensitive comparison ({@link String#equalsIgnoreCase}) when comparing
+ * unit values from different sources.
+ *
  * @see <a href="https://github.com/HydrologicEngineeringCenter/hec-dss/blob/master/heclib/hecdss/hecdss.h">
  *      hecdss.h — units parameter</a>
  */

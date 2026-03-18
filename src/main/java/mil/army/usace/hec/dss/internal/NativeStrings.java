@@ -5,26 +5,15 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * Centralizes normalization of strings read from or written to the DSS native library.
+ * Centralizes normalization of strings written to the DSS native library.
  *
- * <p>DSS stores units, parameter types, and other label strings as-is with no
- * case normalization. This class provides consistent uppercasing so that values
- * read from different sources (HEC-HMS, HEC-RAS, third-party tools) compare
- * reliably against our constant classes ({@code DssUnits}, {@code DssParameters}).
- *
- * <p>E-part intervals are normalized to the canonical mixed-case spellings from
- * {@code standardIntervals.h} (e.g. "1hour" → "1Hour", "ir-century" → "IR-Century").
+ * <p>Only normalizes values where DSS validates against a known set (intervals).
+ * Units, parameters, and other free-form strings are passed through as-is
+ * because DSS does not validate them and normalization could lose information
+ * (e.g. "pH" → "PH").
  */
 public final class NativeStrings {
     private NativeStrings() {}
-
-    /**
-     * Normalizes a string read from native DSS to uppercase.
-     * Uses {@link Locale#ROOT} to match the native C library's ASCII {@code toupper()}.
-     */
-    public static String normalize(String nativeString) {
-        return nativeString != null ? nativeString.toUpperCase(Locale.ROOT) : "";
-    }
 
     private static final Map<String, String> INTERVAL_CANONICAL = new HashMap<>();
     static {

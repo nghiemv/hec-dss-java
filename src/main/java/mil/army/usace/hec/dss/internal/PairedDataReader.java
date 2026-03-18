@@ -83,10 +83,10 @@ public final class PairedDataReader {
                 (long) valuesSize * ValueLayout.JAVA_DOUBLE.byteSize())
                 .toArray(ValueLayout.JAVA_DOUBLE);
         String[] labels = parseLabels(labelsOutput, actualLabelsLen, numberCurves);
-        String xUnits = NativeStrings.normalize(xUnitsOutput.getString(0));
-        String yUnits = NativeStrings.normalize(yUnitsOutput.getString(0));
-        String xType = NativeStrings.normalize(xTypeOutput.getString(0));
-        String yType = NativeStrings.normalize(yTypeOutput.getString(0));
+        String xUnits = xUnitsOutput.getString(0);
+        String yUnits = yUnitsOutput.getString(0);
+        String xType = xTypeOutput.getString(0);
+        String yType = yTypeOutput.getString(0);
 
         // Convert sentinel values to NaN and rearrange to per-curve arrays
         double[][] curves = new double[numberCurves][numberOrdinates];

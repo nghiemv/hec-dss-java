@@ -84,7 +84,7 @@ public final class TimeSeriesReader {
 
         int count = numberValuesReadOutput.get(C_INT, 0);
         int granularity = timeGranularitySecondsOutput.get(C_INT, 0);
-        String units = NativeStrings.normalize(unitsOutput.getString(0));
+        String units = unitsOutput.getString(0);
         TimeSeriesDataType type = TimeSeriesDataType.fromDssString(typeOutput.getString(0));
         ZoneId timeZone = DssTimeZone.parse(timezoneOutput.getString(0));
 
