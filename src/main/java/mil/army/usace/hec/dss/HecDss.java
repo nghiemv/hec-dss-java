@@ -23,6 +23,8 @@ public final class HecDss {
         DssPathname parsed = parseAndValidate(pathname);
         DssPathname normalized = parsed.with(DssPathname.Part.D, "*");
         try (DssSession session = DssSession.open(file)) {
+            expectRecordType(session, parsed, "time series",
+                    DssRecordType.REGULAR_TIME_SERIES, DssRecordType.IRREGULAR_TIME_SERIES);
             return TimeSeriesReader.read(session, normalized);
         }
     }
@@ -36,6 +38,8 @@ public final class HecDss {
         DssPathname parsed = parseAndValidate(pathname);
         DssPathname normalized = parsed.with(DssPathname.Part.D, "*");
         try (DssSession session = DssSession.open(file)) {
+            expectRecordType(session, parsed, "time series",
+                    DssRecordType.REGULAR_TIME_SERIES, DssRecordType.IRREGULAR_TIME_SERIES);
             return TimeSeriesReader.read(session, normalized, start, end);
         }
     }
@@ -59,6 +63,7 @@ public final class HecDss {
     public static DssPairedData readPairedData(Path file, String pathname) {
         DssPathname parsed = parseAndValidate(pathname);
         try (DssSession session = DssSession.open(file)) {
+            expectRecordType(session, parsed, "paired data", DssRecordType.PAIRED_DATA);
             return PairedDataReader.read(session, parsed);
         }
     }
@@ -81,6 +86,7 @@ public final class HecDss {
     public static DssGrid readGrid(Path file, String pathname) {
         DssPathname parsed = parseAndValidate(pathname);
         try (DssSession session = DssSession.open(file)) {
+            expectRecordType(session, parsed, "grid", DssRecordType.GRID);
             return GridReader.read(session, parsed);
         }
     }
@@ -208,6 +214,22 @@ public final class HecDss {
      */
     public static void squeeze(Path file) {
         SqueezeOperation.squeeze(file);
+    }
+
+    private static void expectRecordType(DssSession session, DssPathname pathname,
+                                            String expectedLabel, DssRecordType... expected) {
+        try {
+            DssRecordType actual = RecordTypeReader.read(session, pathname);
+            if (actual == DssRecordType.UNKNOWN) return;
+            for (DssRecordType e : expected) {
+                if (actual == e) return;
+            }
+            throw new DssException(
+                    "Record '%s' is %s, not %s".formatted(pathname, actual, expectedLabel));
+        } catch (DssException e) {
+            if (e.getMessage().startsWith("Record '")) throw e;
+            // Record type check failed (e.g., record not found) — let the reader handle it
+        }
     }
 
     private static DssPathname parseAndValidate(String pathname) {
