@@ -216,6 +216,10 @@ public final class HecDss {
 
     /**
      * Deletes a single record from a DSS file.
+     * The record is marked as deleted but disk space is not reclaimed
+     * until {@link #squeeze(Path)} is called.
+     *
+     * @throws DssException if the pathname is invalid or the delete fails
      */
     public static void delete(Path file, String pathname) {
         DssPathname parsed = parseAndValidate(pathname);
@@ -225,7 +229,9 @@ public final class HecDss {
     }
 
     /**
-     * Compresses a DSS file, reclaiming space from deleted records.
+     * Compresses a DSS file, reclaiming disk space from deleted records.
+     * This is a blocking I/O operation that rewrites the file. No other
+     * process should have the file open during a squeeze.
      */
     public static void squeeze(Path file) {
         SqueezeOperation.squeeze(file);
