@@ -7,6 +7,8 @@ import mil.army.usace.hec.dss.DssTimeSeries;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 
 import static mil.army.usace.hec.dss.internal.hecdss_h$shared.*;
 
@@ -30,8 +32,7 @@ public final class TimeSeriesWriter {
 
         Arena arena = session.arena();
 
-        java.time.ZoneId zone = data.timeZone() != null
-                ? data.timeZone() : java.time.ZoneOffset.UTC;
+        ZoneId zone = DssTimeZone.zoneOrUtc(data.timeZone());
         Instant startInstant = data.time(0);
         NativeDateFormat time = NativeDateFormat.from(startInstant, startInstant, zone);
 
@@ -47,8 +48,7 @@ public final class TimeSeriesWriter {
         int qualitySize = qFlags != null ? 1 : 0;
         MemorySegment unitsInput = arena.allocateFrom(data.units());
         MemorySegment typeInput = arena.allocateFrom(data.type().dssString());
-        String tz = data.timeZone() != null ? data.timeZone().getId() : "";
-        MemorySegment timezoneInput = arena.allocateFrom(tz);
+        MemorySegment timezoneInput = arena.allocateFrom(DssTimeZone.toDssString(data.timeZone()));
 
         int status = hecdss_h.hec_dss_tsStoreRegular(
                 session.dssPointer(), pathnameInput,
@@ -71,14 +71,13 @@ public final class TimeSeriesWriter {
         }
 
         Arena arena = session.arena();
-        java.time.ZoneId zone = data.timeZone() != null
-                ? data.timeZone() : java.time.ZoneOffset.UTC;
+        ZoneId zone = DssTimeZone.zoneOrUtc(data.timeZone());
         int granularity = 60; // seconds per unit — minutes is the standard for irregular
 
         // Convert first Instant to local time in the target timezone, then compute
         // base date and time offsets in that timezone's local calendar
-        java.time.ZonedDateTime firstLocal = data.time(0).atZone(zone);
-        java.time.ZonedDateTime baseLocal = firstLocal.toLocalDate()
+        ZonedDateTime firstLocal = data.time(0).atZone(zone);
+        ZonedDateTime baseLocal = firstLocal.toLocalDate()
                 .atStartOfDay(zone);
         long baseEpochSeconds = baseLocal.toEpochSecond();
 
@@ -104,8 +103,7 @@ public final class TimeSeriesWriter {
         int qualitySize = qFlags != null ? 1 : 0;
         MemorySegment unitsInput = arena.allocateFrom(data.units());
         MemorySegment typeInput = arena.allocateFrom(data.type().dssString());
-        String tz = data.timeZone() != null ? data.timeZone().getId() : "";
-        MemorySegment timezoneInput = arena.allocateFrom(tz);
+        MemorySegment timezoneInput = arena.allocateFrom(DssTimeZone.toDssString(data.timeZone()));
 
         int status = hecdss_h.hec_dss_tsStoreIregular(
                 session.dssPointer(), pathnameInput,

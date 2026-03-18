@@ -58,15 +58,7 @@ public final class LocationInfoReader {
                 verticalDatumOutput.get(C_INT, 0)
         );
 
-        String timezoneStr = timezoneOutput.getString(0);
-        ZoneId timeZone = null;
-        if (!timezoneStr.isEmpty()) {
-            try {
-                timeZone = ZoneId.of(timezoneStr);
-            } catch (Exception ignored) {
-                // Malformed timezone string from DSS — leave as null
-            }
-        }
+        ZoneId timeZone = DssTimeZone.parse(timezoneOutput.getString(0));
 
         return new DssLocationInfo(
                 yOutput.get(C_DOUBLE, 0),  // latitude (native y)

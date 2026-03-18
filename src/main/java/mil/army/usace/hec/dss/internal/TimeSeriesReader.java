@@ -7,6 +7,7 @@ import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 
 import static mil.army.usace.hec.dss.internal.hecdss_h$shared.*;
@@ -85,12 +86,7 @@ public final class TimeSeriesReader {
         int granularity = timeGranularitySecondsOutput.get(C_INT, 0);
         String units = unitsOutput.getString(0);
         TimeSeriesDataType type = TimeSeriesDataType.fromDssString(typeOutput.getString(0));
-        String timezoneStr = timezoneOutput.getString(0);
-        java.time.ZoneId timeZone = null;
-        if (!timezoneStr.isEmpty()) {
-            try { timeZone = java.time.ZoneId.of(timezoneStr); }
-            catch (Exception ignored) { /* malformed timezone string */ }
-        }
+        ZoneId timeZone = DssTimeZone.parse(timezoneOutput.getString(0));
 
         double[] values = valueArrayOutput.asSlice(0,
                 (long) count * ValueLayout.JAVA_DOUBLE.byteSize())
@@ -99,19 +95,10 @@ public final class TimeSeriesReader {
                 (long) count * ValueLayout.JAVA_INT.byteSize())
                 .toArray(ValueLayout.JAVA_INT);
 
-        // Convert native calendar times to proper UTC Instants
-        // DSS stores calendar date+time with no timezone semantics — the timezone
-        // string tells us how to interpret them. Default to UTC if no timezone.
-        java.time.ZoneId zone = timeZone != null ? timeZone : java.time.ZoneOffset.UTC;
-
         Instant[] times = new Instant[count];
         for (int i = 0; i < count; i++) {
             long rawEpoch = InternalConstants.BASE_EPOCH_SECONDS + (long) timeDeltas[i] * granularity;
-            // rawEpoch is seconds since 1970 IF the stored time were UTC.
-            // Convert to LocalDateTime, then reinterpret in the actual timezone.
-            java.time.LocalDateTime ldt = java.time.LocalDateTime.ofEpochSecond(
-                    rawEpoch, 0, java.time.ZoneOffset.UTC);
-            times[i] = ldt.atZone(zone).toInstant();
+            times[i] = DssTimeZone.nativeToInstant(rawEpoch, timeZone);
             if (values[i] == InternalConstants.UNDEFINED_DOUBLE) {
                 values[i] = Double.NaN;
             }
