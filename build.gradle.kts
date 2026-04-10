@@ -11,7 +11,118 @@ java {
     toolchain {
         languageVersion.set(JavaLanguageVersion.of(25))
     }
+    withJavadocJar()
+    withSourcesJar()
 }
+
+// Strict javadoc — catches stale @link, malformed HTML, missing params, etc.
+// Internal packages must be on the source path (public classes reference internal types
+// via their signatures), but we disable doclint for the jextract-generated .internal/
+// bindings so they don't trip warnings.
+tasks.withType<Javadoc>().configureEach {
+    val opts = options as org.gradle.external.javadoc.CoreJavadocOptions
+    opts.addBooleanOption("Xdoclint:all,-missing", true)
+    opts.addBooleanOption("Xdoclint/package:-mil.army.usace.hec.dss.internal.*", true)
+    opts.addStringOption("Xwerror", "-quiet")
+}
+
+// Make `check` fail the build if javadoc is broken.
+tasks.named("check") { dependsOn("javadoc") }
+
+// -------- Public API snapshot ----------
+// `apiSnapshot`        regenerates api/public-api.txt from the compiled classes.
+// `generateApiSnapshotTmp` writes the current snapshot to build/tmp/public-api.txt.
+// `checkApiSnapshot`   fails if the committed snapshot differs from the current code.
+//                      Wired into `check` so PRs that change the public API surface
+//                      show up as a file diff in review.
+val apiSnapshotFile = layout.projectDirectory.file("api/public-api.txt")
+val apiSnapshotTmpFile = layout.buildDirectory.file("tmp/public-api.txt")
+
+val apiSnapshot by tasks.registering(JavaExec::class) {
+    group = "verification"
+    description = "Regenerate api/public-api.txt from compiled classes."
+    dependsOn("compileTestJava", "classes")
+    classpath = sourceSets["test"].runtimeClasspath
+    mainClass.set("mil.army.usace.hec.dss.tools.ApiSnapshot")
+    argumentProviders.add(CommandLineArgumentProvider {
+        listOf(
+            sourceSets["main"].output.classesDirs.singleFile.absolutePath,
+            apiSnapshotFile.asFile.absolutePath
+        )
+    })
+}
+
+val generateApiSnapshotTmp by tasks.registering(JavaExec::class) {
+    group = "verification"
+    description = "Write the current public API to build/tmp/public-api.txt for diff."
+    dependsOn("compileTestJava", "classes")
+    classpath = sourceSets["test"].runtimeClasspath
+    mainClass.set("mil.army.usace.hec.dss.tools.ApiSnapshot")
+    doFirst { apiSnapshotTmpFile.get().asFile.parentFile.mkdirs() }
+    argumentProviders.add(CommandLineArgumentProvider {
+        listOf(
+            sourceSets["main"].output.classesDirs.singleFile.absolutePath,
+            apiSnapshotTmpFile.get().asFile.absolutePath
+        )
+    })
+}
+
+val checkApiSnapshot by tasks.registering {
+    group = "verification"
+    description = "Fail if the committed api/public-api.txt is out of date."
+    dependsOn(generateApiSnapshotTmp)
+    doLast {
+        val committed = apiSnapshotFile.asFile
+        val current = apiSnapshotTmpFile.get().asFile
+        if (!committed.exists()) {
+            throw GradleException(
+                "api/public-api.txt is missing. Run `./gradlew apiSnapshot` and commit the result."
+            )
+        }
+        if (committed.readText() != current.readText()) {
+            val diff = ProcessBuilder("diff", "-u", committed.absolutePath, current.absolutePath)
+                .redirectErrorStream(true).start()
+            val out = diff.inputStream.bufferedReader().readText()
+            diff.waitFor()
+            throw GradleException(
+                "Public API has changed — api/public-api.txt is out of date.\n" +
+                "Run `./gradlew apiSnapshot` and commit the updated file.\n\n" +
+                out
+            )
+        }
+    }
+}
+
+tasks.named("check") { dependsOn(checkApiSnapshot) }
+
+// -------- Client-perspective compile check ----------
+// A separate named module that `requires mil.army.usace.hec.dss;` — so JPMS
+// enforces the module boundary. If anything in `.internal` leaks into a public
+// signature, or a rename/deletion breaks a client call site, this source set
+// fails to compile. The code is never run; compilation alone is the test.
+sourceSets {
+    create("clientTest") {
+        java.srcDir("src/clientTest/java")
+    }
+}
+
+tasks.named<JavaCompile>("compileClientTestJava") {
+    dependsOn("jar")
+    // Put the built jar on the module path and compile clientTest as its own module.
+    // classpath stays empty so nothing is pulled in except what mil.army.usace.hec.dss
+    // explicitly exports — this is what lets the compile catch .internal leaks.
+    val jarTask = tasks.named<Jar>("jar")
+    inputs.files(jarTask)
+    doFirst {
+        options.compilerArgs = listOf(
+            "--module-path", jarTask.get().archiveFile.get().asFile.absolutePath
+        )
+    }
+    classpath = files()
+    destinationDirectory.set(layout.buildDirectory.dir("classes/java/clientTest"))
+}
+
+tasks.named("check") { dependsOn("compileClientTestJava") }
 
 // ------- Dependencies -----------------------
 repositories {
