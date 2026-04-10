@@ -19,7 +19,7 @@ class HecDssTimeSeriesReadTest {
 
         DssTimeSeries allValues = HecDss.readTimeSeries(dssFile, pathname);
         assertEquals(244, allValues.size());
-        assertEquals(77, allValues.dropNa().size());
+        assertEquals(77, allValues.dropMissing().size());
 
         assertNotNull(allValues.time(0));
         assertNotNull(allValues.units());
@@ -37,7 +37,7 @@ class HecDssTimeSeriesReadTest {
 
         DssTimeSeries allValues = HecDss.readTimeSeries(dssFile, pathname);
         assertEquals(113, allValues.size());
-        assertEquals(113, allValues.dropNa().size());
+        assertEquals(113, allValues.dropMissing().size());
 
         DssTimeSeries windowed = HecDss.readTimeSeries(dssFile, pathname, startTime, endTime);
         assertEquals(112, windowed.size());

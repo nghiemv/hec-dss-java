@@ -109,14 +109,14 @@ class DssPathnameTest {
     }
 
     @Test
-    void getPartShouldReturnRequestedPart() {
+    void partShouldReturnRequestedPart() {
         DssPathname path = new DssPathname("A", "B", "C", "D", "E", "F");
-        assertEquals("A", path.getPart(DssPathname.Part.A));
-        assertEquals("B", path.getPart(DssPathname.Part.B));
-        assertEquals("C", path.getPart(DssPathname.Part.C));
-        assertEquals("D", path.getPart(DssPathname.Part.D));
-        assertEquals("E", path.getPart(DssPathname.Part.E));
-        assertEquals("F", path.getPart(DssPathname.Part.F));
+        assertEquals("A", path.part(DssPathname.Part.A));
+        assertEquals("B", path.part(DssPathname.Part.B));
+        assertEquals("C", path.part(DssPathname.Part.C));
+        assertEquals("D", path.part(DssPathname.Part.D));
+        assertEquals("E", path.part(DssPathname.Part.E));
+        assertEquals("F", path.part(DssPathname.Part.F));
     }
 
     @Test

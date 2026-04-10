@@ -100,7 +100,7 @@ public final class PairedDataReader {
             }
         }
 
-        return new DssPairedData(ordinates, curves, labels,
+        return DssPairedData.of(ordinates, curves, labels,
                 xUnits, yUnits, xType, yType);
     }
 

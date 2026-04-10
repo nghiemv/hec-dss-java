@@ -12,6 +12,23 @@ import java.util.Objects;
  * Static entry point for DSS file operations.
  * All methods are self-contained — no resource management required.
  *
+ * <p><b>Method naming:</b> {@code read*} / {@code write*} operate on record
+ * payloads (time series, grids, paired data, …). {@code get*} returns
+ * file-level metadata (catalog, record count, record type).
+ *
+ * <p><b>Example:</b>
+ * <pre>{@code
+ * // Happy path — no try-catch needed
+ * var ts = HecDss.readTimeSeries(file, "/BASIN/OUTLET/FLOW/*\/1Hour/RUN:1/");
+ *
+ * // When you want to handle errors
+ * try {
+ *     var ts = HecDss.readTimeSeries(file, pathname);
+ * } catch (DssException e) {
+ *     log.error("DSS operation failed", e);
+ * }
+ * }</pre>
+ *
  * <p><b>Concurrency:</b> DSS files support multiple concurrent readers but
  * only one writer at a time. The native library handles locking internally.
  * Each method call opens and closes its own session, so concurrent reads
@@ -259,7 +276,9 @@ public final class HecDss {
      * Returns catalog entries matching a pathname pattern.
      * Use {@code *} in any part to match all values for that part.
      *
-     * @param pathnamePattern DSS pathname with wildcards, e.g. {@code "/&#42;/&#42;/FLOW/&#42;/&#42;/&#42;/"}
+     * <p>Example pattern (all FLOW records): <pre>/{@literal *}/{@literal *}/FLOW/{@literal *}/{@literal *}/{@literal *}/</pre>
+     *
+     * @param pathnamePattern DSS pathname with {@code *} wildcards in any of the six parts
      */
     public static List<DssCatalogEntry> getCatalog(Path file, String pathnamePattern) {
         requireFileExists(file);
@@ -311,7 +330,7 @@ public final class HecDss {
      *
      * @throws DssException if the pathname is invalid or the delete fails
      */
-    public static void delete(Path file, String pathname) {
+    public static void deleteRecord(Path file, String pathname) {
         requireFileExists(file);
         DssPathname parsed = parseAndValidate(pathname);
         try (DssSession session = DssSession.open(file)) {

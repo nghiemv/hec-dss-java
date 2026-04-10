@@ -14,11 +14,11 @@ public final class GridWriter {
 
     public static void write(DssSession session, DssPathname pathname, DssGrid grid) {
         Arena arena = session.arena();
-        NativeGridMetadata meta = grid.nativeMetadata();
+        NativeGridMetadata meta = DssGrid.Internal.metadataOf(grid);
 
         int width = grid.width();
         int height = grid.height();
-        double[] data = grid.data();
+        double[] data = grid.values();
 
         // Flatten to float[] and flip: row 0 (north) → last native row (bottom-to-top)
         float[] nativeData = new float[width * height];

@@ -177,7 +177,7 @@ public final class GridReader {
                 new RangeHistogram(rangeLimits, rangeExceedance)
         );
 
-        return DssGrid.fromNative(data, cellsX, cellsY, cellSize, xOrigin, yOrigin,
+        return DssGrid.Internal.create(data, cellsX, cellsY, cellSize, xOrigin, yOrigin,
                 units, crs, dataType, metadata);
     }
 }

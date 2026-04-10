@@ -118,9 +118,11 @@ public record DssPathname(String aPart, String bPart, String cPart, String dPart
     }
 
     /**
-     * Gets the specified part of the pathname.
+     * Returns the specified part of the pathname.
+     * Equivalent to the record accessors ({@link #aPart()}, {@link #bPart()}, …)
+     * but usable in loops over {@link Part#values()}.
      */
-    public String getPart(Part part) {
+    public String part(Part part) {
         return switch (part) {
             case A -> aPart;
             case B -> bPart;

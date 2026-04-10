@@ -1,21 +1,21 @@
 package mil.army.usace.hec.dss;
 
 /**
- * Time series interval — the E-part of a DSS pathname.
+ * Standard time series interval strings — the E-part of a DSS pathname.
  *
  * <p>Regular intervals define the spacing between values.
  * Irregular intervals define the block size for storage grouping.
  *
  * <p>Use these constants when constructing pathnames for time series:
  * <pre>{@code
- * String pathname = "/BASIN/OUTLET/FLOW/01Jan2020/" + Interval.HOUR_1 + "/RUN:1/";
+ * String pathname = "/BASIN/OUTLET/FLOW/01Jan2020/" + DssIntervals.HOUR_1 + "/RUN:1/";
  * }</pre>
  *
  * @see <a href="https://github.com/HydrologicEngineeringCenter/hec-dss/blob/master/heclib/heclib_c/src/headers/standardIntervals.h">
  *      standardIntervals.h — eParts7 array</a>
  */
-public final class DssInterval {
-    private DssInterval() {}
+public final class DssIntervals {
+    private DssIntervals() {}
 
     // ---- Regular: seconds ----
     public static final String SECOND_1 = "1Second";

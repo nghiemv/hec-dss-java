@@ -29,7 +29,7 @@ class HecDssDeleteTest {
         var catalog = HecDss.getCatalog(dssFile);
         for (DssCatalogEntry entry : catalog) {
             if (entry.pathname().fPart().equals("OBS-to-delete")) {
-                HecDss.delete(dssFile, entry.pathname().toString());
+                HecDss.deleteRecord(dssFile, entry.pathname().toString());
             }
         }
 
@@ -45,6 +45,6 @@ class HecDssDeleteTest {
         HecDss.writeText(dssFile, pathname, "This will be deleted");
         assertTrue(HecDss.getRecordCount(dssFile) > 0);
 
-        HecDss.delete(dssFile, pathname);
+        HecDss.deleteRecord(dssFile, pathname);
     }
 }

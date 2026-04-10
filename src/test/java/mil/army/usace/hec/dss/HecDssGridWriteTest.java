@@ -21,8 +21,8 @@ class HecDssGridWriteTest {
         assertEquals(original.width(), reread.width());
         assertEquals(original.height(), reread.height());
 
-        double[] origData = original.data();
-        double[] rereadData = reread.data();
+        double[] origData = original.values();
+        double[] rereadData = reread.values();
         assertArrayEquals(origData, rereadData, 0.001);
     }
 
@@ -48,7 +48,7 @@ class HecDssGridWriteTest {
         DssGrid output = HecDss.readGrid(dssFile, pathname);
         assertEquals(width, output.width());
         assertEquals(height, output.height());
-        assertArrayEquals(data, output.data(), 0.01);
+        assertArrayEquals(data, output.values(), 0.01);
     }
 
     @Test

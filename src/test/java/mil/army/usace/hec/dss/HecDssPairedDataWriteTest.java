@@ -21,8 +21,8 @@ class HecDssPairedDataWriteTest {
         HecDss.writePairedData(dssFile, pathname, input);
 
         DssPairedData output = HecDss.readPairedData(dssFile, pathname);
-        assertEquals(5, output.numberOrdinates());
-        assertEquals(1, output.numberCurves());
+        assertEquals(5, output.ordinateCount());
+        assertEquals(1, output.curveCount());
         assertArrayEquals(ordinates, output.ordinates());
         assertArrayEquals(values, output.curve(0));
         assertEquals("FEET", output.xUnits());
@@ -59,7 +59,7 @@ class HecDssPairedDataWriteTest {
             }
         }
         String[] labels = {"x plus 0", "x plus 1", "x plus 2"};
-        DssPairedData input = new DssPairedData(
+        DssPairedData input = DssPairedData.of(
                 ordinates, curves, labels,
                 "cm", "CFS", "Stage", "Flow"
         );
@@ -67,8 +67,8 @@ class HecDssPairedDataWriteTest {
         HecDss.writePairedData(dssFile, pathname, input);
 
         DssPairedData output = HecDss.readPairedData(dssFile, pathname);
-        assertEquals(5, output.numberOrdinates());
-        assertEquals(3, output.numberCurves());
+        assertEquals(5, output.ordinateCount());
+        assertEquals(3, output.curveCount());
         assertArrayEquals(ordinates, output.ordinates());
         for (int c = 0; c < 3; c++) {
             assertArrayEquals(curves[c], output.curve(c));
@@ -83,14 +83,11 @@ class HecDssPairedDataWriteTest {
 
         DssPairedData original = HecDss.readPairedData(dssFile, readPath);
 
-        double[][] curves = new double[original.numberCurves()][];
-        for (int c = 0; c < original.numberCurves(); c++) {
-            curves[c] = original.curve(c);
-        }
+        double[][] curves = original.curves();
 
         String[] newLabels = original.labels().clone();
         newLabels[Math.min(3, newLabels.length - 1)] = "New Label";
-        DssPairedData modified = new DssPairedData(
+        DssPairedData modified = DssPairedData.of(
                 original.ordinates(), curves,
                 newLabels, original.xUnits(), original.yUnits(),
                 original.xType(), original.yType()
@@ -100,7 +97,7 @@ class HecDssPairedDataWriteTest {
 
         DssPairedData reread = HecDss.readPairedData(dssFile, writePath);
         assertArrayEquals(original.ordinates(), reread.ordinates());
-        for (int c = 0; c < original.numberCurves(); c++) {
+        for (int c = 0; c < original.curveCount(); c++) {
             assertArrayEquals(original.curve(c), reread.curve(c));
         }
         assertEquals("New Label", reread.labels()[Math.min(3, reread.labels().length - 1)]);

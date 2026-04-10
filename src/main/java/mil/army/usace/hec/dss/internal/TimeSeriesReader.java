@@ -117,7 +117,7 @@ public final class TimeSeriesReader {
             if (hasAny) quality = rawQuality;
         }
 
-        return new DssTimeSeries(times, values, units, type, timeZone, quality);
+        return DssTimeSeries.of(times, values, units, type, timeZone, quality);
     }
 
     private static Instant[] readRange(DssSession session, DssPathname pathname) {

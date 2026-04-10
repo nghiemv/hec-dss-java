@@ -43,7 +43,7 @@ public final class TimeSeriesWriter {
         MemorySegment startDateInput = arena.allocateFrom(time.startDate());
         MemorySegment startTimeInput = arena.allocateFrom(time.startTime());
         MemorySegment valueArray = NativeBuffers.allocateDoubles(arena, values);
-        int[] qFlags = data.qualityFlags();
+        int[] qFlags = data.quality();
         MemorySegment qualityArray = qFlags != null
                 ? NativeBuffers.allocateInts(arena, qFlags)
                 : arena.allocate(C_INT, data.size());
@@ -98,7 +98,7 @@ public final class TimeSeriesWriter {
         MemorySegment baseDateInput = arena.allocateFrom(baseDateFmt.startDate());
         MemorySegment timesInput = NativeBuffers.allocateInts(arena, timeOffsets);
         MemorySegment valueArray = NativeBuffers.allocateDoubles(arena, data.values());
-        int[] qFlags = data.qualityFlags();
+        int[] qFlags = data.quality();
         MemorySegment qualityArray = qFlags != null
                 ? NativeBuffers.allocateInts(arena, qFlags)
                 : arena.allocate(C_INT, data.size());

@@ -24,7 +24,7 @@ class HecDssTimeSeriesWriteTest {
             times[i] = Instant.ofEpochSecond(start.getEpochSecond() + i * 3600);
         }
 
-        DssTimeSeries input = new DssTimeSeries(times, values, "CFS", TimeSeriesDataType.INST_VAL);
+        DssTimeSeries input = DssTimeSeries.of(times, values, "CFS", TimeSeriesDataType.INST_VAL);
         HecDss.writeTimeSeries(dssFile, pathname, input);
 
         DssTimeSeries output = HecDss.readTimeSeries(dssFile, pathname);
@@ -68,7 +68,7 @@ class HecDssTimeSeriesWriteTest {
 
         double[] modifiedValues = original.values().clone();
         modifiedValues[3] = 75.0;
-        DssTimeSeries modified = new DssTimeSeries(original.times(), modifiedValues, "FEET", original.type());
+        DssTimeSeries modified = DssTimeSeries.of(original.times(), modifiedValues, "FEET", original.type());
 
         String writePath = "/regular-time-series/GAPT/FLOW/01Oct2021/6Hour/test-modified/";
         HecDss.writeTimeSeries(dssFile, writePath, modified);
@@ -93,7 +93,7 @@ class HecDssTimeSeriesWriteTest {
                 ZonedDateTime.parse("2010-11-05T16:00:00Z").toInstant()
         };
 
-        DssTimeSeries input = new DssTimeSeries(times, values, "CFS", TimeSeriesDataType.INST_VAL);
+        DssTimeSeries input = DssTimeSeries.of(times, values, "CFS", TimeSeriesDataType.INST_VAL);
         HecDss.writeTimeSeries(dssFile, pathname, input);
 
         DssTimeSeries output = HecDss.readTimeSeries(dssFile, pathname);
@@ -130,7 +130,7 @@ class HecDssTimeSeriesWriteTest {
 
         double[] modifiedValues = original.values().clone();
         modifiedValues[3] = 75.0;
-        DssTimeSeries modified = new DssTimeSeries(original.times(), modifiedValues, "FEET", original.type());
+        DssTimeSeries modified = DssTimeSeries.of(original.times(), modifiedValues, "FEET", original.type());
 
         String writePath = "/irregular-time-series/FAIR OAKS CA/FLOW-ANNUAL PEAK/01Jan1900/IR-Century/USGS-modified/";
         HecDss.writeTimeSeries(dssFile, writePath, modified);

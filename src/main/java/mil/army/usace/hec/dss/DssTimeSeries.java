@@ -10,12 +10,16 @@ import java.util.stream.IntStream;
  * Plain value object — no native resources, no lifecycle management.
  *
  * <p>Missing values are represented as {@link Double#NaN}.
- * Use {@link #isUndefined(int)} to check, or {@link #dropNa()} to exclude them.
+ * Use {@link #isMissing(int)} to check, or {@link #dropMissing()} to exclude them.
  *
  * <p>Times are true UTC {@link Instant}s. When reading from DSS, the stored
  * timezone is used to convert the native calendar times to UTC. When writing,
  * Instants are converted to the specified timezone's local time for native
  * storage. If no timezone is stored or specified, UTC is assumed.
+ *
+ * <p><b>Precision note:</b> DSS stores time series at second precision.
+ * Sub-second components of {@link Instant} inputs are truncated on construction.
+ * Round-tripping an {@code Instant} with nanoseconds will lose them.
  *
  * <p>Quality flags are optional per-value integers stored by DSS. The meaning
  * of individual bits is application-defined (e.g. screened, valid, missing,
@@ -54,10 +58,10 @@ public final class DssTimeSeries {
         return new DssTimeSeries(times, values, units, type, null, null);
     }
 
-    public DssTimeSeries(Instant[] times, double[] values, String units,
-                         TimeSeriesDataType type, ZoneId timeZone, int[] quality) {
-        Objects.requireNonNull(times);
-        Objects.requireNonNull(values);
+    private DssTimeSeries(Instant[] times, double[] values, String units,
+                          TimeSeriesDataType type, ZoneId timeZone, int[] quality) {
+        Objects.requireNonNull(times, "times must not be null");
+        Objects.requireNonNull(values, "values must not be null");
         if (values.length != times.length) {
             throw new IllegalArgumentException(
                     "values length (%d) != times length (%d)".formatted(values.length, times.length));
@@ -68,42 +72,46 @@ public final class DssTimeSeries {
         }
         this.epochSeconds = new long[times.length];
         for (int i = 0; i < times.length; i++) {
-            this.epochSeconds[i] = Objects.requireNonNull(times[i]).getEpochSecond();
+            this.epochSeconds[i] = Objects.requireNonNull(times[i], "times must not contain null").getEpochSecond();
         }
         this.values = values.clone();
-        this.units = Objects.requireNonNull(units);
-        this.type = Objects.requireNonNull(type);
+        this.units = Objects.requireNonNull(units, "units must not be null");
+        this.type = Objects.requireNonNull(type, "type must not be null");
         this.timeZone = timeZone;
         this.quality = quality != null ? quality.clone() : null;
     }
 
-    public DssTimeSeries(Instant[] times, double[] values, String units,
-                         TimeSeriesDataType type, ZoneId timeZone) {
-        this(times, values, units, type, timeZone, null);
-    }
-
-    public DssTimeSeries(Instant[] times, double[] values, String units, TimeSeriesDataType type) {
-        this(times, values, units, type, null, null);
-    }
-
+    /** Number of values in the series. */
     public int size() {
         return values.length;
     }
 
+    /**
+     * Returns the value at the given index. Missing values are {@link Double#NaN}.
+     *
+     * @throws IndexOutOfBoundsException if {@code index} is out of range
+     */
     public double value(int index) {
         Objects.checkIndex(index, values.length);
         return values[index];
     }
 
+    /**
+     * Returns the time at the given index (at second precision).
+     *
+     * @throws IndexOutOfBoundsException if {@code index} is out of range
+     */
     public Instant time(int index) {
         Objects.checkIndex(index, epochSeconds.length);
         return Instant.ofEpochSecond(epochSeconds[index]);
     }
 
+    /** Returns a defensive copy of all values. Missing values are {@link Double#NaN}. */
     public double[] values() {
         return values.clone();
     }
 
+    /** Returns a defensive copy of all times (at second precision). */
     public Instant[] times() {
         Instant[] result = new Instant[epochSeconds.length];
         for (int i = 0; i < epochSeconds.length; i++) {
@@ -112,10 +120,12 @@ public final class DssTimeSeries {
         return result;
     }
 
+    /** Data units (e.g. {@code "CFS"}, {@code "CMS"}). */
     public String units() {
         return units;
     }
 
+    /** What the values represent over time (instantaneous, cumulative, period-average, …). */
     public TimeSeriesDataType type() {
         return type;
     }
@@ -149,16 +159,19 @@ public final class DssTimeSeries {
     }
 
     /**
-     * Returns a copy of all quality flags, or null if no quality data is present.
+     * Returns a defensive copy of all quality flags, or {@code null} if
+     * no quality data is present.
      */
-    public int[] qualityFlags() {
+    public int[] quality() {
         return quality != null ? quality.clone() : null;
     }
 
     /**
-     * Returns true if the value at the given index is undefined (missing).
+     * Returns true if the value at the given index is missing (NaN).
+     *
+     * @throws IndexOutOfBoundsException if {@code index} is out of range
      */
-    public boolean isUndefined(int index) {
+    public boolean isMissing(int index) {
         Objects.checkIndex(index, values.length);
         return Double.isNaN(values[index]);
     }
@@ -172,9 +185,10 @@ public final class DssTimeSeries {
     }
 
     /**
-     * Returns a new time series with missing/undefined values excluded.
+     * Returns a new time series with missing values excluded.
+     * Returns this same instance if nothing is missing.
      */
-    public DssTimeSeries dropNa() {
+    public DssTimeSeries dropMissing() {
         int[] kept = IntStream.range(0, values.length)
                 .filter(i -> !Double.isNaN(values[i]))
                 .toArray();

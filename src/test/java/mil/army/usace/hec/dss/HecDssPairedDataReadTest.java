@@ -14,8 +14,8 @@ class HecDssPairedDataReadTest {
         String pathname = "/MY BASIN/DEER CREEK/STAGE-FLOW///USGS/";
 
         DssPairedData pd = HecDss.readPairedData(dssFile, pathname);
-        assertTrue(pd.numberOrdinates() > 0);
-        assertEquals(1, pd.numberCurves());
+        assertTrue(pd.ordinateCount() > 0);
+        assertEquals(1, pd.curveCount());
         assertEquals("FEET", pd.xUnits());
         assertEquals("CFS", pd.yUnits());
     }
@@ -26,8 +26,8 @@ class HecDssPairedDataReadTest {
         String pathname = "/FOLSOM/AUXILIARY SPILLWAY-GATE RATING/ELEV-FLOW/PAIREDVALUESEXT///";
 
         DssPairedData pd = HecDss.readPairedData(dssFile, pathname);
-        assertTrue(pd.numberOrdinates() > 0);
-        assertTrue(pd.numberCurves() > 1, "Expected multi-curve paired data");
+        assertTrue(pd.ordinateCount() > 0);
+        assertTrue(pd.curveCount() > 1, "Expected multi-curve paired data");
         assertTrue(pd.labels().length > 0, "Expected labels on multi-curve data");
     }
 }

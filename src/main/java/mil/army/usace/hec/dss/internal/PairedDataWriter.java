@@ -17,9 +17,9 @@ public final class PairedDataWriter {
         Arena arena = session.arena();
 
         double[] ordinates = data.ordinates();
-        // Reconstruct column-major flat array for native call
-        int numOrds = data.numberOrdinates();
-        int numCurves = data.numberCurves();
+        // Reconstruct row-major flat array for native call
+        int numOrds = data.ordinateCount();
+        int numCurves = data.curveCount();
         double[] flatValues = new double[numOrds * numCurves];
         for (int c = 0; c < numCurves; c++) {
             double[] curve = data.curve(c);
@@ -49,7 +49,7 @@ public final class PairedDataWriter {
 
         int status = hecdss_h.hec_dss_pdStore(
                 session.dssPointer(), pathnameInput,
-                ordinatesInput, data.numberOrdinates(),
+                ordinatesInput, data.ordinateCount(),
                 valuesInput, flatValues.length,
                 numOrds, numCurves,
                 xUnitsInput, xTypeInput, yUnitsInput, yTypeInput,

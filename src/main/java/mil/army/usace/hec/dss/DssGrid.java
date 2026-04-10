@@ -36,9 +36,9 @@ import java.util.Objects;
  *         "MM", DssCrs.SHG, GridDataType.PER_CUM);
  * }</pre>
  *
- * <p>Or derive from an existing grid (common case — same geometry, new data):
+ * <p>Or derive from an existing grid (common case — same geometry, new values):
  * <pre>{@code
- * DssGrid output = sourceGrid.withData(newData, "MM", GridDataType.PER_CUM);
+ * DssGrid output = sourceGrid.withValues(newValues, "MM", GridDataType.PER_CUM);
  * }</pre>
  */
 public final class DssGrid {
@@ -85,7 +85,7 @@ public final class DssGrid {
     /**
      * Creates a grid from scratch.
      *
-     * @param data     flat row-major cell data (row 0 = north), length must equal width * height
+     * @param values   flat row-major cell values (row 0 = north), length must equal {@code width * height}
      * @param width    number of columns
      * @param height   number of rows
      * @param cellSize cell spacing in CRS units (must be positive)
@@ -95,19 +95,19 @@ public final class DssGrid {
      * @param crs      coordinate reference system
      * @param dataType what the cell values represent over time
      */
-    public static DssGrid of(double[] data, int width, int height,
+    public static DssGrid of(double[] values, int width, int height,
                              double cellSize, double xOrigin, double yOrigin,
                              String units, DssCrs crs, GridDataType dataType) {
-        return new DssGrid(data, width, height, cellSize, xOrigin, yOrigin,
+        return new DssGrid(values, width, height, cellSize, xOrigin, yOrigin,
                 units, crs, dataType, null);
     }
 
     /**
-     * Returns a new grid with the same geometry and CRS but different data, units, and data type.
+     * Returns a new grid with the same geometry and CRS but different values, units, and data type.
      * This is the common case: applying model results to an existing grid's spatial layout.
      */
-    public DssGrid withData(double[] newData, String units, GridDataType dataType) {
-        return new DssGrid(newData, width, height, cellSize, xOrigin, yOrigin,
+    public DssGrid withValues(double[] newValues, String units, GridDataType dataType) {
+        return new DssGrid(newValues, width, height, cellSize, xOrigin, yOrigin,
                 units, crs, dataType, null);
     }
 
@@ -127,13 +127,21 @@ public final class DssGrid {
                 units, crs, dataType, nativeMetadata);
     }
 
-    // ---- Data access ----
+    // ---- Value access ----
 
-    /** Single cell value. Row 0 = north. */
-    public double value(int row, int col) { return data[row * width + col]; }
+    /**
+     * Returns the value of a single cell. Row 0 is the northernmost row.
+     *
+     * @throws IndexOutOfBoundsException if row or col is out of range
+     */
+    public double value(int row, int col) {
+        Objects.checkIndex(row, height);
+        Objects.checkIndex(col, width);
+        return data[row * width + col];
+    }
 
-    /** Flat copy of cell data, row-major, row 0 = north. */
-    public double[] data() { return data.clone(); }
+    /** Defensive copy of the flat cell values, row-major, row 0 = north. */
+    public double[] values() { return data.clone(); }
 
     // ---- Geometry ----
 
@@ -169,23 +177,36 @@ public final class DssGrid {
     /** What the cell values represent over time. */
     public GridDataType dataType() { return dataType; }
 
-    // ---- Internal (used by GridReader/GridWriter — not part of the public API) ----
-
     @Override
     public String toString() {
         return "DssGrid[%dx%d, cellSize=%s, origin=(%s, %s), units=%s, crs=%s, dataType=%s]"
                 .formatted(width, height, cellSize, xOrigin, yOrigin, units, crs, dataType);
     }
 
-    /** @hidden */
-    public NativeGridMetadata nativeMetadata() { return nativeMetadata; }
+    /**
+     * Internal escape hatch used by GridReader/GridWriter to round-trip
+     * DSS-native metadata fields without exposing them to clients.
+     *
+     * <p><b>Not part of the public API.</b> The types in this class's
+     * signatures come from the unexported {@code .internal} package, so
+     * modular clients cannot reference them. Non-modular clients may see
+     * these methods in autocomplete but cannot meaningfully call them.
+     *
+     * @hidden
+     */
+    public static final class Internal {
+        private Internal() {}
 
-    /** @hidden */
-    public static DssGrid fromNative(double[] data, int width, int height,
+        public static DssGrid create(double[] values, int width, int height,
                                      double cellSize, double xOrigin, double yOrigin,
                                      String units, DssCrs crs, GridDataType dataType,
                                      NativeGridMetadata nativeMetadata) {
-        return new DssGrid(data, width, height, cellSize, xOrigin, yOrigin,
-                units, crs, dataType, nativeMetadata);
+            return new DssGrid(values, width, height, cellSize, xOrigin, yOrigin,
+                    units, crs, dataType, nativeMetadata);
+        }
+
+        public static NativeGridMetadata metadataOf(DssGrid grid) {
+            return grid.nativeMetadata;
+        }
     }
 }
