@@ -81,6 +81,12 @@ public final class DssPairedData {
         return flatValues[ordinateIndex * numberCurves + curveIndex];
     }
 
+    @Override
+    public String toString() {
+        return "DssPairedData[ordinates=%d, curves=%d, xUnits=%s, yUnits=%s, xType=%s, yType=%s]"
+                .formatted(ordinates.length, numberCurves, xUnits, yUnits, xType, yType);
+    }
+
     /**
      * Returns all y-values for the given curve (defensive copy).
      */

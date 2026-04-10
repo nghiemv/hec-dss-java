@@ -171,6 +171,12 @@ public final class DssGrid {
 
     // ---- Internal (used by GridReader/GridWriter — not part of the public API) ----
 
+    @Override
+    public String toString() {
+        return "DssGrid[%dx%d, cellSize=%s, origin=(%s, %s), units=%s, crs=%s, dataType=%s]"
+                .formatted(width, height, cellSize, xOrigin, yOrigin, units, crs, dataType);
+    }
+
     /** @hidden */
     public NativeGridMetadata nativeMetadata() { return nativeMetadata; }
 

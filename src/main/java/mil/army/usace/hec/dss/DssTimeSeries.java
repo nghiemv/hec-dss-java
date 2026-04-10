@@ -163,6 +163,14 @@ public final class DssTimeSeries {
         return Double.isNaN(values[index]);
     }
 
+    @Override
+    public String toString() {
+        String first = size() > 0 ? Instant.ofEpochSecond(epochSeconds[0]).toString() : "-";
+        String last = size() > 0 ? Instant.ofEpochSecond(epochSeconds[size() - 1]).toString() : "-";
+        return "DssTimeSeries[size=%d, units=%s, type=%s, tz=%s, from=%s, to=%s, quality=%s]"
+                .formatted(size(), units, type, timeZone, first, last, hasQuality());
+    }
+
     /**
      * Returns a new time series with missing/undefined values excluded.
      */
