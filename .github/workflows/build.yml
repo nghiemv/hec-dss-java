@@ -1,0 +1,55 @@
+name: build
+
+on:
+  push:
+    branches: [main, "feature/**"]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: "Publish to HEC Nexus (uses the version in build.gradle.kts)"
+        type: boolean
+        default: false
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        # Only platforms with a published native binary on Nexus. macОS is omitted until a
+        # darwin hecdss zip exists — the lenient extract task no-ops, but the DSS tests need a
+        # loadable library, so a macos runner would fail here today.
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build, test, verify API snapshot + javadoc
+        run: ./gradlew check --stacktrace
+
+  publish:
+    needs: build
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish }}
+    runs-on: ubuntu-latest
+    # Nexus write creds live on this protected environment, not as plain repo secrets — so they
+    # are exposed only to this deploy job and can require approval / branch restrictions.
+    environment: nexus-release
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Publish to HEC Nexus
+        # nexusUser / nexusPassword are read as Gradle project properties; the
+        # ORG_GRADLE_PROJECT_ prefix maps these env vars to them without putting
+        # secrets on the command line. Add NEXUS_USER / NEXUS_PASSWORD repo secrets.
+        env:
+          ORG_GRADLE_PROJECT_nexusUser: ${{ secrets.NEXUS_USER }}
+          ORG_GRADLE_PROJECT_nexusPassword: ${{ secrets.NEXUS_PASSWORD }}
+        run: ./gradlew publish --stacktrace

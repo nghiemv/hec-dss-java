@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "mil.army.usace.hec"
-version = "0.0.2"
+version = "0.0.3"
 
 // ------ Java Configuration -----------------------
 java {
@@ -133,9 +133,16 @@ repositories {
 // Define platform-specific configurations
 val windowsNatives by configurations.creating
 val linuxNatives by configurations.creating
+// macOS (darwin) binaries are not published to HEC Nexus yet — hec-dss CI builds on a macos
+// runner but does not deploy the .dylib. These coordinates follow the win/linux naming pattern;
+// the extract tasks below are lenient, so once such a zip is published it is bundled
+// automatically with no further change. The classifier naming is assumed and may need to match
+// whatever HEC ultimately publishes (darwin-x86_64 / darwin-aarch64).
+val macosX64Natives by configurations.creating
+val macosArm64Natives by configurations.creating
 
 // Define Version Numbers
-val hecDssVersion = "7-JA-6"
+val hecDssVersion = "7-JA-7"
 val nativeLibLoaderVersion = "2.5.0"
 val junitVersion = "5.10.0"
 
@@ -143,6 +150,8 @@ dependencies {
     // HEC-DSS Binaries
     windowsNatives("mil.army.usace.hec:hecdss:$hecDssVersion-win-x86_64@zip")
     linuxNatives("mil.army.usace.hec:hecdss:$hecDssVersion-linux-x86_64@zip")
+    macosX64Natives("mil.army.usace.hec:hecdss:$hecDssVersion-darwin-x86_64@zip")
+    macosArm64Natives("mil.army.usace.hec:hecdss:$hecDssVersion-darwin-aarch64@zip")
     // NativeLibLoader to load the native libraries seamlessly
     implementation("org.scijava:native-lib-loader:$nativeLibLoaderVersion")
     // JUnit Testing Framework
@@ -167,58 +176,63 @@ val nativeLibrariesGroup = "native libraries"
 
 val extractAllNatives by tasks.registering {
     group = nativeLibrariesGroup
-    description = "Extract all supported OS native libraries from the HEC-DSS zip file."
-    dependsOn(tasks.named("extractWindowsNatives"), tasks.named("extractLinuxNatives"))
+    description = "Extract all supported OS native libraries from the HEC-DSS zip files."
+    dependsOn(
+        tasks.named("extractWindowsNatives"),
+        tasks.named("extractLinuxNatives"),
+        tasks.named("extractMacosX64Natives"),
+        tasks.named("extractMacosArm64Natives"),
+    )
 }
 
-registerNativeTask("Windows", windowsNatives, "windows_64")
-registerNativeTask("Linux", linuxNatives, "linux_64")
+// win/linux are required — a missing artifact fails the build. macOS is lenient until a darwin
+// binary is published: a missing artifact yields an empty natives dir instead of a failure.
+registerNativeTask("Windows", windowsNatives, "windows_64", lenient = false)
+registerNativeTask("Linux", linuxNatives, "linux_64", lenient = false)
+registerNativeTask("MacosX64", macosX64Natives, "osx_64", lenient = true)
+registerNativeTask("MacosArm64", macosArm64Natives, "osx_arm64", lenient = true)
 
-fun registerNativeTask(name: String, sources: FileCollection, platform: String) {
+fun registerNativeTask(name: String, sources: Configuration, platform: String, lenient: Boolean) {
     tasks.register<Copy>("extract${name}Natives") {
         group = nativeLibrariesGroup
         description = "Extract $platform native libraries from the HEC-DSS zip file."
-        from(provider { sources.files.map { zipTree(it) } })
+        // Lenient resolution drops an unresolved (not-yet-published) artifact silently instead of
+        // failing the build; required platforms resolve the configuration directly.
+        val zips =
+            if (lenient) sources.incoming.artifactView { isLenient = true }.files
+            else sources as FileCollection
+        from(provider { zips.files.map { zipTree(it) } })
+        // 7-JA-7+ zips bundle hecdss.h next to the library — keep the header out of the jar.
+        exclude("**/*.h")
         into(layout.buildDirectory.dir("resources/main/natives/${platform}"))
-        inputs.files(sources)
+        inputs.files(zips)
         outputs.dir(layout.buildDirectory.dir("resources/main/natives/${platform}"))
     }
 }
 
 // -------------- jextract: Generate FFM Bindings -----------------------
-// The hecdss.h header is pinned to a specific commit in the hec-dss repo.
-// To update, change hecDssGitRef below. Run `./gradlew downloadHeader` to see a clickable link.
+// hecdss.h ships inside the HEC-DSS native zip (7-JA-7+), so the bindings are generated from the
+// exact header that matches the bundled binary. This replaces the previous GitHub raw download,
+// which pinned a separate commit that could drift from the library ABI.
 
 val jextractGroup = "code generation"
-val hecDssRepo = "HydrologicEngineeringCenter/hec-dss"
-val hecDssHeaderPath = "heclib/hecdss/hecdss.h"
-val hecDssGitRef = project.findProperty("hecdss.gitRef")?.toString() ?: "65801a2291ae832596657ee9766eebd8863f0c42"
 val headerFile = layout.buildDirectory.file("native/hecdss.h").get().asFile
 val generatedSourceDir = file("src/main/java")
 val bindingsPackage = "mil.army.usace.hec.dss.internal"
 
-tasks.register("downloadHeader") {
+val extractHeader by tasks.registering(Copy::class) {
     group = jextractGroup
-    description = "Download hecdss.h from the hec-dss GitHub repository."
-
-    inputs.property("gitRef", hecDssGitRef)
+    description = "Extract hecdss.h from the HEC-DSS native zip for jextract."
+    from(provider { linuxNatives.files.map { zipTree(it) } }) { include("**/*.h") }
+    into(headerFile.parentFile)
+    inputs.files(linuxNatives)
     outputs.file(headerFile)
-
-    doLast {
-        val uri = uri("https://raw.githubusercontent.com/$hecDssRepo/$hecDssGitRef/$hecDssHeaderPath")
-        headerFile.parentFile.mkdirs()
-        uri.toURL().openStream().use { input ->
-            headerFile.outputStream().use { output -> input.copyTo(output) }
-        }
-        println("Downloaded $hecDssHeaderPath @ ${hecDssGitRef.take(12)}")
-        println("  https://github.com/$hecDssRepo/blob/$hecDssGitRef/$hecDssHeaderPath")
-    }
 }
 
 tasks.register<Exec>("generateBindings") {
     group = jextractGroup
     description = "Generate Java FFM bindings from hecdss.h using jextract."
-    dependsOn("downloadHeader")
+    dependsOn(extractHeader)
 
     val jextractBin = project.findProperty("jextract.path")?.toString() ?: "jextract"
 
