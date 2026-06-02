@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.0.3 — Native 7-JA-7, bundled header, macOS-ready
+
+- **HEC-DSS natives bumped to 7-JA-7** (from 7-JA-6). The bundled `hecdss.h`
+  is byte-identical to the previously pinned header, so the committed FFM
+  bindings are unchanged and ABI-compatible.
+- **Bindings generated from the bundled header.** `7-JA-7+` native zips ship
+  `hecdss.h` alongside the library, so `generateBindings` now extracts the
+  header from the zip instead of downloading a separately pinned commit from
+  GitHub — the header can no longer drift from the binary. The header is
+  excluded from the published jar.
+- **macOS wiring (latent).** Added `osx_64` / `osx_arm64` native extraction.
+  HEC does not currently publish a darwin binary (CI builds one but never
+  deploys it), so the tasks are lenient and no-op until a
+  `hecdss:7-JA-7-darwin-x86_64` / `-darwin-aarch64` zip exists on Nexus, at
+  which point it is bundled automatically.
+
 ## 0.0.2 — Windows support fix
 
 Bugfix release. The published `0.0.1` was unusable on Windows and missing a
