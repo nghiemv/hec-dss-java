@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "mil.army.usace.hec"
-version = "1.0-SNAPSHOT"
+version = "0.0.2"
 
 // ------ Java Configuration -----------------------
 java {
@@ -234,6 +234,10 @@ tasks.register<Exec>("generateBindings") {
 }
 
 // -------------- Publishing -----------------------
+// Credentials live in ~/.gradle/gradle.properties as nexusUser / nexusPassword. mavenUser /
+// mavenPassword are still honoured as a fallback so existing CI overrides keep working.
+val nexusUser: String? by project
+val nexusPassword: String? by project
 val mavenUser: String? by project
 val mavenPassword: String? by project
 
@@ -249,8 +253,8 @@ publishing {
     repositories {
         maven {
             credentials {
-                username = mavenUser
-                password = mavenPassword
+                username = nexusUser ?: mavenUser
+                password = nexusPassword ?: mavenPassword
             }
             val releasesRepoUrl = uri("https://www.hec.usace.army.mil/nexus/repository/maven-releases/")
             val snapshotsRepoUrl = uri("https://www.hec.usace.army.mil/nexus/repository/maven-snapshots/")

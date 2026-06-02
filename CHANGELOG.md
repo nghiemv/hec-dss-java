@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.0.2 — Windows support fix
+
+Bugfix release. The published `0.0.1` was unusable on Windows and missing a
+runtime dependency; both are fixed here. No API changes.
+
+- **Loads on Windows.** The jextract-generated `C_LONG` constant cast the
+  canonical C `long` layout to `ValueLayout.OfLong`, which holds on LP64
+  (Linux/macOS) but throws `ClassCastException` at class-load on Windows
+  (LLP64, where C `long` is 32-bit / `OfInt`). The constant is unused by the
+  bindings, so its declared type is widened to the common supertype
+  `ValueLayout` — the single committed binding now loads on both ABIs.
+- **Native loader reaches consumers.** `0.0.1`'s published POM declared no
+  dependencies, so `org.scijava:native-lib-loader` was absent at runtime and
+  every call failed with `NoClassDefFoundError`. The publication now carries it
+  as a runtime dependency.
+
 ## Unreleased — API v1 polish
 
 Pre-1.0 cleanup of the public `mil.army.usace.hec.dss` package. All changes below are **breaking** — clients on a prior snapshot must update call sites before upgrading.
