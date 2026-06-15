@@ -16,17 +16,28 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Only platforms with a published native binary on Nexus. macОS is omitted until a
-        # darwin hecdss zip exists — the lenient extract task no-ops, but the DSS tests need a
-        # loadable library, so a macos runner would fail here today.
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
+    env:
+      # Pin the Gradle 25 toolchain to the x64 JDK that setup-java installed. Without this,
+      # auto-detection on macos-latest (arm64) could pick a pre-installed arm64 JDK, and the
+      # resulting arm64 JVM cannot load the bundled x86_64 hecdss dylib.
+      GRADLE_OPTS: >-
+        -Dorg.gradle.java.installations.auto-detect=false
+        -Dorg.gradle.java.installations.auto-download=false
+        -Dorg.gradle.java.installations.fromEnv=JAVA_HOME
     steps:
       - uses: actions/checkout@v4
+      # Only an x86_64 macOS native is shipped; run it under Rosetta on the arm64 runner
+      # so the x64 JVM loads it cleanly.
+      - name: Ensure Rosetta 2 (macOS)
+        if: runner.os == 'macOS'
+        run: softwareupdate --install-rosetta --agree-to-license
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "25"
+          architecture: x64
       - uses: gradle/actions/setup-gradle@v4
       - name: Build, test, verify API snapshot + javadoc
         run: ./gradlew check --stacktrace

@@ -133,13 +133,10 @@ repositories {
 // Define platform-specific configurations
 val windowsNatives by configurations.creating
 val linuxNatives by configurations.creating
-// macOS (darwin) binaries are not published to HEC Nexus yet — hec-dss CI builds on a macos
-// runner but does not deploy the .dylib. These coordinates follow the win/linux naming pattern;
-// the extract tasks below are lenient, so once such a zip is published it is bundled
-// automatically with no further change. The classifier naming is assumed and may need to match
-// whatever HEC ultimately publishes (darwin-x86_64 / darwin-aarch64).
+// Only the x86_64 macOS native is bundled; Apple Silicon hosts run it under Rosetta. The arm64
+// darwin dylib is deferred because it carries a code signature that the rpath repair below
+// (patchMacosNativeRpath) would invalidate, and re-signing it would require running on macOS.
 val macosX64Natives by configurations.creating
-val macosArm64Natives by configurations.creating
 
 // Define Version Numbers
 val hecDssVersion = "7-JA-7"
@@ -151,7 +148,6 @@ dependencies {
     windowsNatives("mil.army.usace.hec:hecdss:$hecDssVersion-win-x86_64@zip")
     linuxNatives("mil.army.usace.hec:hecdss:$hecDssVersion-linux-x86_64@zip")
     macosX64Natives("mil.army.usace.hec:hecdss:$hecDssVersion-darwin-x86_64@zip")
-    macosArm64Natives("mil.army.usace.hec:hecdss:$hecDssVersion-darwin-aarch64@zip")
     // NativeLibLoader to load the native libraries seamlessly
     implementation("org.scijava:native-lib-loader:$nativeLibLoaderVersion")
     // JUnit Testing Framework
@@ -180,34 +176,75 @@ val extractAllNatives by tasks.registering {
     dependsOn(
         tasks.named("extractWindowsNatives"),
         tasks.named("extractLinuxNatives"),
-        tasks.named("extractMacosX64Natives"),
-        tasks.named("extractMacosArm64Natives"),
+        patchMacosNativeRpath,
     )
 }
 
-// win/linux are required — a missing artifact fails the build. macOS is lenient until a darwin
-// binary is published: a missing artifact yields an empty natives dir instead of a failure.
-registerNativeTask("Windows", windowsNatives, "windows_64", lenient = false)
-registerNativeTask("Linux", linuxNatives, "linux_64", lenient = false)
-registerNativeTask("MacosX64", macosX64Natives, "osx_64", lenient = true)
-registerNativeTask("MacosArm64", macosArm64Natives, "osx_arm64", lenient = true)
+// All three bundled platforms publish a 7-JA-7 native, so a missing artifact fails the build.
+registerNativeTask("Windows", windowsNatives, "windows_64")
+registerNativeTask("Linux", linuxNatives, "linux_64")
+registerNativeTask("MacosX64", macosX64Natives, "osx_64")
 
-fun registerNativeTask(name: String, sources: Configuration, platform: String, lenient: Boolean) {
+fun registerNativeTask(name: String, sources: Configuration, platform: String) {
     tasks.register<Copy>("extract${name}Natives") {
         group = nativeLibrariesGroup
         description = "Extract $platform native libraries from the HEC-DSS zip file."
-        // Lenient resolution drops an unresolved (not-yet-published) artifact silently instead of
-        // failing the build; required platforms resolve the configuration directly.
-        val zips =
-            if (lenient) sources.incoming.artifactView { isLenient = true }.files
-            else sources as FileCollection
-        from(provider { zips.files.map { zipTree(it) } })
+        from(provider { sources.files.map { zipTree(it) } })
         // 7-JA-7+ zips bundle hecdss.h next to the library — keep the header out of the jar.
         exclude("**/*.h")
         into(layout.buildDirectory.dir("resources/main/natives/${platform}"))
-        inputs.files(zips)
+        inputs.files(sources)
         outputs.dir(layout.buildDirectory.dir("resources/main/natives/${platform}"))
     }
+}
+
+// WHY: the published darwin libhecdss.dylib resolves zlib via `@rpath/libz.1.dylib`, but its only
+// LC_RPATH is the hec-dss build machine's path (.../build/_deps/zlib-build), which exists nowhere
+// else — so dyld cannot find zlib and the load fails on every other Mac (UnsatisfiedLinkError
+// surfaced as "Cannot load native library 'hecdss'"). Rewrite that rpath in place to /usr/lib so
+// `@rpath/libz.1.dylib` resolves to the system zlib every Mac ships. The x86_64 dylib is unsigned,
+// so the byte edit needs no re-signing and is safe to perform on any build OS.
+val patchMacosNativeRpath by tasks.registering {
+    group = nativeLibrariesGroup
+    description = "Repoint the macOS native's @rpath to /usr/lib so it can resolve the system zlib."
+    dependsOn("extractMacosX64Natives")
+    val dylib = layout.buildDirectory.file("resources/main/natives/osx_64/libhecdss.dylib")
+    inputs.files(tasks.named("extractMacosX64Natives"))
+    outputs.file(dylib)
+    doLast { rewriteMachoRpathsToUsrLib(dylib.get().asFile) }
+}
+
+// Rewrite every LC_RPATH in a 64-bit little-endian Mach-O to /usr/lib, in place. /usr/lib (8 bytes)
+// always fits in the original rpath's null-padded string slot, so command sizes are unchanged and
+// the file stays structurally identical.
+fun rewriteMachoRpathsToUsrLib(file: java.io.File) {
+    val data = file.readBytes()
+    fun u32(o: Int): Int =
+        (data[o].toInt() and 0xff) or
+            ((data[o + 1].toInt() and 0xff) shl 8) or
+            ((data[o + 2].toInt() and 0xff) shl 16) or
+            ((data[o + 3].toInt() and 0xff) shl 24)
+    require(u32(0) == 0xfeedfacf.toInt()) { "Not a 64-bit little-endian Mach-O: ${file.name}" }
+    val newPath = "/usr/lib".toByteArray(Charsets.UTF_8)
+    val lcRpath = 0x8000001c.toInt()
+    val ncmds = u32(16)
+    var p = 32 // mach_header_64 size
+    var patched = 0
+    repeat(ncmds) {
+        val cmd = u32(p)
+        val size = u32(p + 4)
+        if (cmd == lcRpath) {
+            val strStart = p + u32(p + 8)
+            val region = p + size - strStart
+            require(newPath.size + 1 <= region) { "rpath slot too small in ${file.name}" }
+            for (j in 0 until region) data[strStart + j] = if (j < newPath.size) newPath[j] else 0
+            patched++
+        }
+        p += size
+    }
+    require(patched > 0) { "no LC_RPATH found in ${file.name}" }
+    file.writeBytes(data)
+    logger.lifecycle("Patched $patched rpath(s) -> /usr/lib in ${file.name}")
 }
 
 // -------------- jextract: Generate FFM Bindings -----------------------
