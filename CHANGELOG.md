@@ -1,6 +1,16 @@
 # Changelog
 
-## 0.0.3 — Native 7-JA-7, bundled header, macOS support
+## 0.0.4 — Working macOS native (x86_64)
+
+- **macOS native now loads.** Bundles the `darwin-x86_64` `libhecdss.dylib`
+  (Apple Silicon runs it under Rosetta). The upstream dylib resolves zlib via
+  `@rpath/libz.1.dylib` but ships only a build-machine `LC_RPATH`, so the build
+  rewrites that rpath in place to `/usr/lib` — otherwise dyld cannot find zlib
+  and the load fails (the cause of the non-loading `0.0.3` macOS native).
+  arm64 is deferred: its dylib carries a code signature an in-place patch would
+  invalidate. CI now builds and tests on macOS alongside Linux/Windows.
+
+## 0.0.3 — Native 7-JA-7, bundled header
 
 - **HEC-DSS natives bumped to 7-JA-7** (from 7-JA-6). The bundled `hecdss.h`
   is byte-identical to the previously pinned header, so the committed FFM
@@ -10,13 +20,8 @@
   header from the zip instead of downloading a separately pinned commit from
   GitHub — the header can no longer drift from the binary. The header is
   excluded from the published jar.
-- **macOS support (x86_64).** Bundles the `darwin-x86_64` `libhecdss.dylib`;
-  Apple Silicon hosts run it under Rosetta. The upstream dylib resolves zlib
-  via `@rpath/libz.1.dylib` but ships only a build-machine `LC_RPATH`, so the
-  build rewrites that rpath in place to `/usr/lib` (where every Mac ships
-  `libz.1.dylib`) — otherwise dyld cannot find zlib and the load fails. arm64
-  is deferred: its dylib carries a code signature an in-place patch would
-  invalidate. CI now builds and tests on macOS in addition to Linux/Windows.
+- **macOS wiring (non-loading).** Added `osx_64` / `osx_arm64` extraction, but
+  the bundled darwin dylib fails to load off the build machine — fixed in 0.0.4.
 
 ## 0.0.2 — Windows support fix
 

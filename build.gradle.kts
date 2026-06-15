@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "mil.army.usace.hec"
-version = "0.0.3"
+version = "0.0.4"
 
 // ------ Java Configuration -----------------------
 java {
