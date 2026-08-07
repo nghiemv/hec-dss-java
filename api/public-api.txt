@@ -109,6 +109,18 @@ public final record mil.army.usace.hec.dss.DssLocationInfo(double latitude, doub
   public final java.lang.String toString();
 }
 
+public final enum mil.army.usace.hec.dss.DssMessageLevel {
+  public static final mil.army.usace.hec.dss.DssMessageLevel CRITICAL;
+  public static final mil.army.usace.hec.dss.DssMessageLevel GENERAL;
+  public static final mil.army.usace.hec.dss.DssMessageLevel INTERNAL_DIAGNOSTIC_1;
+  public static final mil.army.usace.hec.dss.DssMessageLevel INTERNAL_DIAGNOSTIC_2;
+  public static final mil.army.usace.hec.dss.DssMessageLevel NONE;
+  public static final mil.army.usace.hec.dss.DssMessageLevel TERSE;
+  public static final mil.army.usace.hec.dss.DssMessageLevel USER_DIAGNOSTIC;
+  public static mil.army.usace.hec.dss.DssMessageLevel valueOf(java.lang.String);
+  public static mil.army.usace.hec.dss.DssMessageLevel[] values();
+}
+
 public final class mil.army.usace.hec.dss.DssPairedData {
   public int curveCount();
   public double[][] curves();
@@ -256,6 +268,7 @@ public final class mil.army.usace.hec.dss.HecDss {
   public static java.util.List getCatalog(java.nio.file.Path, java.lang.String);
   public static int getRecordCount(java.nio.file.Path);
   public static mil.army.usace.hec.dss.DssRecordType getRecordType(java.nio.file.Path, java.lang.String);
+  public static void logToConsole();
   public static double[] readArray(java.nio.file.Path, java.lang.String);
   public static mil.army.usace.hec.dss.DssGrid readGrid(java.nio.file.Path, java.lang.String);
   public static mil.army.usace.hec.dss.DssLocationInfo readLocationInfo(java.nio.file.Path, java.lang.String);
@@ -264,6 +277,8 @@ public final class mil.army.usace.hec.dss.HecDss {
   public static mil.army.usace.hec.dss.DssTimeSeries readTimeSeries(java.nio.file.Path, java.lang.String);
   public static mil.army.usace.hec.dss.DssTimeSeries readTimeSeries(java.nio.file.Path, java.lang.String, java.time.Instant, java.time.Instant);
   public static boolean recordExists(java.nio.file.Path, java.lang.String);
+  public static void setLogFile(java.nio.file.Path);
+  public static void setMessageLevel(mil.army.usace.hec.dss.DssMessageLevel);
   public static void squeeze(java.nio.file.Path);
   public static void writeArray(java.nio.file.Path, java.lang.String, double[]);
   public static void writeGrid(java.nio.file.Path, java.lang.String, mil.army.usace.hec.dss.DssGrid);

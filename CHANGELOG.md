@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.0.5
+
+- **Control over native diagnostics.** `HecDss.setMessageLevel(DssMessageLevel)`
+  sets how much the native library prints; `HecDss.setLogFile(Path)` and
+  `HecDss.logToConsole()` choose where it goes. Both are process-global, matching
+  the underlying heclib settings. The native default (`GENERAL`) prints an open
+  header and a nineteen-line close-statistics block around every file operation,
+  which dominates the console output of any application that reads DSS in a loop.
+  Since this API reports failures as `DssException`, callers can drop to
+  `CRITICAL`. A handful of native messages are written unconditionally and ignore
+  the level — notably `"Error reading record type from path:"`, which heclib emits
+  on the ordinary lookup miss behind `recordExists` — so `setLogFile` is the way
+  to get a fully quiet console.
+
 ## 0.0.4
 
 Initial release of the typed `hec-dss-java` API.

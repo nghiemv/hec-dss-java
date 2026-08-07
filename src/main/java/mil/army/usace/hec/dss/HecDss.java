@@ -348,6 +348,54 @@ public final class HecDss {
         SqueezeOperation.squeeze(file);
     }
 
+    // ---- Native diagnostics ----
+
+    /**
+     * Sets how much diagnostic output the native library writes. The setting is
+     * global to the process and takes effect immediately.
+     *
+     * <p>The native default is {@link DssMessageLevel#GENERAL}, which prints a
+     * block of open/close statistics around every file operation. Since this
+     * API reports failures as {@link DssException}, callers that do not parse
+     * that output can drop to {@link DssMessageLevel#CRITICAL}:
+     *
+     * <pre>{@code
+     * HecDss.setMessageLevel(DssMessageLevel.CRITICAL);
+     * }</pre>
+     *
+     * @param level the verbosity to apply
+     * @throws NullPointerException if {@code level} is null
+     * @throws DssException if the native library rejects the setting
+     */
+    public static void setMessageLevel(DssMessageLevel level) {
+        Objects.requireNonNull(level, "level must not be null");
+        MessageControl.setLevel(level);
+    }
+
+    /**
+     * Redirects native diagnostics from stdout to {@code file}, globally and
+     * until {@link #logToConsole()} is called.
+     *
+     * <p>{@link #setMessageLevel} silences most, but not all, native output: a
+     * few messages are written unconditionally, including the
+     * {@code "Error reading record type from path:"} that heclib emits on the
+     * ordinary lookup miss behind {@link #recordExists}. Redirecting is the only
+     * way to keep those off an application's console without losing them.
+     *
+     * @param file the log file to write to
+     * @throws NullPointerException if {@code file} is null
+     * @throws DssException if the file cannot be opened for writing
+     */
+    public static void setLogFile(Path file) {
+        Objects.requireNonNull(file, "file must not be null");
+        MessageControl.setLogFile(file);
+    }
+
+    /** Closes the current log file and returns native diagnostics to stdout. */
+    public static void logToConsole() {
+        MessageControl.logToConsole();
+    }
+
     private static void expectRecordType(DssSession session, DssPathname pathname,
                                          String expectedLabel, DssRecordType... expected) {
         DssRecordType actual = RecordTypeReader.read(session, pathname);
